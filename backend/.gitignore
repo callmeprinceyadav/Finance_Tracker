@@ -1,0 +1,6 @@
+.env
+node_modules
+.env.example
+debug-mongo.js
+test-gemini-quick.js
+GEMINI_MIGRATION.md
