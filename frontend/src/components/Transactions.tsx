@@ -354,19 +354,23 @@ export const Transactions: React.FC = () => {
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
           <div className="flex items-center gap-4">
-            <div className="p-3 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl text-white">
-              <CreditCard className="h-6 w-6" />
+            <div className="p-4 bg-gradient-to-br from-blue-500 via-purple-500 to-blue-600 rounded-2xl text-white shadow-lg">
+              <CreditCard className="h-7 w-7" />
             </div>
             <div>
-              <h2 className="text-2xl font-bold text-gray-900">Transaction Management</h2>
-              <p className="text-gray-600 mt-1">Review, edit, and manage your financial transactions</p>
-              <div className="flex items-center gap-4 mt-2 text-sm text-gray-500">
-                <span className="flex items-center gap-1">
-                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                  Current Session Data
+              <h2 className="text-3xl font-bold text-gray-900 flex items-center gap-2">
+                💳 Transaction Management
+              </h2>
+              <p className="text-gray-600 mt-1 text-lg">Review, edit, and manage your financial transactions</p>
+              <div className="flex items-center gap-6 mt-3 text-sm">
+                <span className="flex items-center gap-2 bg-green-50 px-3 py-1 rounded-full">
+                  <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                  <span className="text-green-700 font-medium">Live Session Data</span>
                 </span>
-                <span>•</span>
-                <span>{totalCount} total transactions</span>
+                <span className="flex items-center gap-2 text-gray-600">
+                  <span className="font-semibold text-gray-900">{totalCount}</span>
+                  <span>transactions loaded</span>
+                </span>
               </div>
             </div>
           </div>
@@ -375,20 +379,20 @@ export const Transactions: React.FC = () => {
             <button
               onClick={fetchTransactions}
               disabled={loading}
-              className="p-2.5 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+              className="p-3 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all duration-200 shadow-sm hover:shadow-md group"
               title="Refresh transactions"
             >
-              <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+              <RefreshCw className={`h-5 w-5 transition-transform ${loading ? 'animate-spin' : 'group-hover:rotate-45'}`} />
             </button>
             
             {selectedTransactions.length > 0 && (
               <div className="flex items-center gap-2">
                 <button
                   onClick={handleBulkVerify}
-                  className="px-4 py-2.5 bg-emerald-500 text-white text-sm rounded-lg hover:bg-emerald-600 transition-colors flex items-center gap-2 shadow-sm"
+                  className="px-5 py-3 bg-gradient-to-r from-emerald-500 to-green-600 text-white text-sm font-medium rounded-xl hover:from-emerald-600 hover:to-green-700 transition-all flex items-center gap-2 shadow-md hover:shadow-lg"
                 >
                   <CheckCircle className="h-4 w-4" />
-                  Verify ({selectedTransactions.length})
+                  ✓ Verify ({selectedTransactions.length})
                 </button>
                 
                 {/* Bulk Category Update */}
@@ -400,35 +404,35 @@ export const Transactions: React.FC = () => {
                         e.target.value = ''; // Reset selection
                       }
                     }}
-                    className="px-4 py-2.5 bg-blue-500 text-white text-sm rounded-lg hover:bg-blue-600 transition-colors appearance-none pr-8"
+                    className="px-5 py-3 bg-gradient-to-r from-blue-500 to-indigo-600 text-white text-sm font-medium rounded-xl hover:from-blue-600 hover:to-indigo-700 transition-all appearance-none pr-10 shadow-md"
                     defaultValue=""
                   >
-                    <option value="" disabled>🏷️ Change Category</option>
+                    <option value="" disabled>🏷️ Category</option>
                     {categories.filter(cat => cat !== 'All').map(category => (
                       <option key={category} value={category} className="text-gray-900">
                         {category}
                       </option>
                     ))}
                   </select>
-                  <ChevronDown className="absolute right-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-white pointer-events-none" />
+                  <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-white pointer-events-none" />
                 </div>
                 
                 <button
                   onClick={handleBulkDelete}
-                  className="px-4 py-2.5 bg-red-500 text-white text-sm rounded-lg hover:bg-red-600 transition-colors flex items-center gap-2 shadow-sm"
+                  className="px-5 py-3 bg-gradient-to-r from-red-500 to-red-600 text-white text-sm font-medium rounded-xl hover:from-red-600 hover:to-red-700 transition-all flex items-center gap-2 shadow-md hover:shadow-lg"
                 >
                   <Trash2 className="h-4 w-4" />
-                  Delete ({selectedTransactions.length})
+                  🗑️ Delete ({selectedTransactions.length})
                 </button>
               </div>
             )}
             
             <button
               onClick={() => setShowNewTransactionForm(true)}
-              className="px-4 py-2.5 bg-gradient-to-r from-blue-500 to-purple-600 text-white text-sm rounded-lg hover:from-blue-600 hover:to-purple-700 transition-all flex items-center gap-2 shadow-sm"
+              className="px-6 py-3 bg-gradient-to-r from-purple-500 via-blue-500 to-indigo-600 text-white text-sm font-semibold rounded-xl hover:from-purple-600 hover:via-blue-600 hover:to-indigo-700 transition-all flex items-center gap-2 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
             >
               <Plus className="h-4 w-4" />
-              Add Transaction
+              ✨ Add Transaction
             </button>
           </div>
         </div>
@@ -437,25 +441,35 @@ export const Transactions: React.FC = () => {
       {/* Enhanced Search and Filters */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
         <div className="space-y-6">
-          {/* Search Bar with Enhanced Design */}
+          {/* Enhanced Search Bar with Better Icons and Design */}
           <div className="relative">
             <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-              <Search className="h-5 w-5 text-gray-400" />
+              <div className="flex items-center gap-2">
+                <Search className="h-5 w-5 text-blue-500" />
+                <div className="h-4 w-px bg-gray-300"></div>
+              </div>
             </div>
             <input
               type="text"
-              placeholder="Search by description, merchant, or category..."
+              placeholder="🔍 Search transactions by description, merchant, or category..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-12 pr-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:bg-white transition-all text-sm placeholder-gray-500"
+              className="w-full pl-16 pr-12 py-4 bg-white border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-sm placeholder-gray-500 shadow-sm hover:shadow-md"
             />
-            {searchTerm && (
+            {searchTerm ? (
               <button
                 onClick={() => setSearchTerm('')}
-                className="absolute inset-y-0 right-0 pr-4 flex items-center"
+                className="absolute inset-y-0 right-0 pr-4 flex items-center group"
               >
-                <XCircle className="h-4 w-4 text-gray-400 hover:text-gray-600" />
+                <XCircle className="h-5 w-5 text-gray-400 hover:text-red-500 transition-colors group-hover:scale-110" />
               </button>
+            ) : (
+              <div className="absolute inset-y-0 right-0 pr-4 flex items-center">
+                <div className="flex items-center gap-1 text-xs text-gray-400">
+                  <span>Press</span>
+                  <kbd className="px-2 py-0.5 text-xs text-gray-500 bg-gray-100 rounded border">⌘K</kbd>
+                </div>
+              </div>
             )}
           </div>
 
@@ -684,72 +698,96 @@ export const Transactions: React.FC = () => {
             {/* Transactions */}
             <div className="divide-y divide-gray-200">
               {transactions.map((transaction) => (
-                <div key={transaction._id} className="px-6 py-4 hover:bg-gray-50">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-4 flex-1 min-w-0">
-                      <input
-                        type="checkbox"
-                        checked={selectedTransactions.includes(transaction._id)}
-                        onChange={() => toggleTransactionSelection(transaction._id)}
-                        className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
-                      />
+                <div key={transaction._id} className="px-6 py-5 hover:bg-gray-50 transition-all duration-150">
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-start gap-4 flex-1 min-w-0">
+                      {/* Checkbox with better alignment */}
+                      <div className="flex items-center pt-1">
+                        <input
+                          type="checkbox"
+                          checked={selectedTransactions.includes(transaction._id)}
+                          onChange={() => toggleTransactionSelection(transaction._id)}
+                          className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded shadow-sm"
+                        />
+                      </div>
                       
+                      {/* Transaction Icon */}
+                      <div className={`flex-shrink-0 w-12 h-12 rounded-xl flex items-center justify-center ${
+                        transaction.amount >= 0 ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'
+                      }`}>
+                        {transaction.amount >= 0 ? (
+                          <TrendingUp className="w-6 h-6" />
+                        ) : (
+                          <TrendingDown className="w-6 h-6" />
+                        )}
+                      </div>
+                      
+                      {/* Transaction Details */}
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-3 mb-2">
-                          <p className="text-sm font-medium text-gray-900 truncate">
+                          <h3 className="text-base font-semibold text-gray-900 truncate">
                             {transaction.description}
-                          </p>
+                          </h3>
                           
                           {!transaction.isVerified && (
-                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800 border border-amber-200">
+                              <AlertCircle className="w-3 h-3 mr-1" />
                               AI Parsed
                             </span>
                           )}
                         </div>
                         
-                        <div className="flex items-center gap-4 text-sm text-gray-500">
-                          <span className="flex items-center gap-1">
-                            <Calendar className="h-3 w-3" />
-                            {format(new Date(transaction.date), 'MMM dd, yyyy')}
+                        <div className="flex items-center gap-4 text-sm text-gray-600">
+                          <span className="flex items-center gap-1.5">
+                            <Calendar className="w-4 h-4 text-gray-400" />
+                            <span className="font-medium">{format(new Date(transaction.date), 'MMM dd, yyyy')}</span>
                           </span>
                           
-                          <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getCategoryColor(transaction.category)}`}>
-                            <Tag className="h-3 w-3 mr-1" />
+                          <span className={`inline-flex items-center px-3 py-1 rounded-lg text-xs font-medium ${getCategoryColor(transaction.category)} shadow-sm`}>
+                            <Tag className="w-3 h-3 mr-1.5" />
                             {transaction.category}
                           </span>
                           
                           {transaction.merchant && (
-                            <span className="truncate">
-                              at {transaction.merchant}
+                            <span className="flex items-center gap-1.5 truncate">
+                              <Building2 className="w-4 h-4 text-gray-400" />
+                              <span className="font-medium">{transaction.merchant}</span>
                             </span>
                           )}
                         </div>
                       </div>
                     </div>
                     
-                    <div className="flex items-center gap-4">
+                    {/* Amount and Actions */}
+                    <div className="flex items-center gap-6">
                       <div className="text-right">
-                        <p className={`text-lg font-semibold ${
+                        <div className={`text-xl font-bold ${
                           transaction.amount >= 0 ? 'text-green-600' : 'text-red-600'
                         }`}>
                           {formatCurrency(transaction.amount)}
-                        </p>
+                        </div>
+                        <div className={`text-xs font-medium uppercase tracking-wide ${
+                          transaction.amount >= 0 ? 'text-green-500' : 'text-red-500'
+                        }`}>
+                          {transaction.amount >= 0 ? '💰 Income' : '💸 Expense'}
+                        </div>
                       </div>
                       
-                      <div className="flex items-center gap-2">
+                      {/* Action Buttons */}
+                      <div className="flex items-center gap-1">
                         <button 
                           onClick={() => handleEditTransaction(transaction)}
-                          className="p-1 text-gray-400 hover:text-gray-600 rounded"
+                          className="p-2.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-200 group"
                           title="Edit transaction"
                         >
-                          <Edit3 className="h-4 w-4" />
+                          <Edit3 className="h-4 w-4 group-hover:scale-110 transition-transform" />
                         </button>
                         <button 
                           onClick={() => handleDeleteTransaction(transaction._id)}
-                          className="p-1 text-gray-400 hover:text-red-600 rounded"
+                          className="p-2.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all duration-200 group"
                           title="Delete transaction"
                         >
-                          <Trash2 className="h-4 w-4" />
+                          <Trash2 className="h-4 w-4 group-hover:scale-110 transition-transform" />
                         </button>
                       </div>
                     </div>
