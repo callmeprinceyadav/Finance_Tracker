@@ -10,10 +10,19 @@ import {
   Calendar,
   DollarSign,
   Tag,
-  RefreshCw
+  RefreshCw,
+  Plus,
+  Eye,
+  AlertCircle,
+  TrendingUp,
+  TrendingDown,
+  Building2,
+  CreditCard,
+  MoreVertical,
+  Download
 } from 'lucide-react';
 import { financeApi, formatCurrency, handleApiError } from '../services/api';
-import { Transaction, TransactionFilters, TransactionCategory } from '../types';
+import { Transaction, TransactionFilters, TransactionCategory, TransactionFormData } from '../types';
 import { format } from 'date-fns';
 
 export const Transactions: React.FC = () => {
@@ -37,6 +46,9 @@ export const Transactions: React.FC = () => {
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [transactionToDelete, setTransactionToDelete] = useState<string | null>(null);
+  const [showNewTransactionForm, setShowNewTransactionForm] = useState(false);
+  const [viewMode, setViewMode] = useState<'cards' | 'table'>('cards');
+  const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
 
   // Categories for filtering
   const categories: (TransactionCategory | 'All')[] = [
@@ -139,6 +151,42 @@ export const Transactions: React.FC = () => {
     }
   };
 
+  const handleBulkDelete = async () => {
+    if (selectedTransactions.length === 0) return;
+    
+    const confirmed = window.confirm(
+      `Are you sure you want to delete ${selectedTransactions.length} selected transactions? This action cannot be undone.`
+    );
+    
+    if (!confirmed) return;
+    
+    try {
+      // Delete each transaction individually since we don't have a bulk delete endpoint
+      for (const transactionId of selectedTransactions) {
+        await financeApi.deleteTransaction(transactionId);
+      }
+      setSelectedTransactions([]);
+      fetchTransactions();
+    } catch (err) {
+      setError(handleApiError(err));
+    }
+  };
+
+  const handleBulkCategoryUpdate = async (newCategory: TransactionCategory) => {
+    if (selectedTransactions.length === 0) return;
+    
+    try {
+      await financeApi.bulkUpdateTransactions(selectedTransactions, { 
+        category: newCategory,
+        isVerified: true 
+      });
+      setSelectedTransactions([]);
+      fetchTransactions();
+    } catch (err) {
+      setError(handleApiError(err));
+    }
+  };
+
   const handleEditTransaction = (transaction: Transaction) => {
     console.log('Edit button clicked for transaction:', transaction.description);
     setEditingTransaction(transaction);
@@ -172,6 +220,34 @@ export const Transactions: React.FC = () => {
       await financeApi.deleteTransaction(transactionToDelete);
       setTransactionToDelete(null);
       setShowDeleteModal(false);
+      fetchTransactions();
+    } catch (err) {
+      setError(handleApiError(err));
+    }
+  };
+
+  const handleCreateTransaction = async (formData: {
+    description: string;
+    amount: number;
+    category: TransactionCategory;
+    merchant?: string;
+    transactionType: 'debit' | 'credit';
+    date: string;
+  }) => {
+    try {
+      // Map form data to TransactionFormData format
+      const transactionData: TransactionFormData = {
+        date: formData.date,
+        description: formData.description,
+        amount: formData.amount,
+        category: formData.category,
+        merchant: formData.merchant,
+        transactionType: formData.transactionType,
+        reference: undefined // Optional field
+      };
+      
+      await financeApi.createTransaction(transactionData);
+      setShowNewTransactionForm(false);
       fetchTransactions();
     } catch (err) {
       setError(handleApiError(err));
@@ -276,233 +352,375 @@ export const Transactions: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h2 className="text-2xl font-bold text-gray-900">Transactions</h2>
-          <p className="text-gray-600">Manage and review your financial transactions</p>
-        </div>
-        
-        <div className="flex items-center gap-3">
-          <button
-            onClick={fetchTransactions}
-            disabled={loading}
-            className="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100"
-          >
-            <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-          </button>
+      {/* Enhanced Header */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+          <div className="flex items-center gap-4">
+            <div className="p-3 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl text-white">
+              <CreditCard className="h-6 w-6" />
+            </div>
+            <div>
+              <h2 className="text-2xl font-bold text-gray-900">Transaction Management</h2>
+              <p className="text-gray-600 mt-1">Review, edit, and manage your financial transactions</p>
+              <div className="flex items-center gap-4 mt-2 text-sm text-gray-500">
+                <span className="flex items-center gap-1">
+                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                  Current Session Data
+                </span>
+                <span>•</span>
+                <span>{totalCount} total transactions</span>
+              </div>
+            </div>
+          </div>
           
-          {selectedTransactions.length > 0 && (
+          <div className="flex items-center gap-3">
+            {/* View Mode Toggle */}
+            <div className="flex items-center bg-gray-100 rounded-lg p-1">
+              <button
+                onClick={() => setViewMode('cards')}
+                className={`px-3 py-1.5 text-sm rounded-md transition-all ${
+                  viewMode === 'cards'
+                    ? 'bg-white text-gray-900 shadow-sm'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                <Eye className="h-4 w-4 inline mr-1" />
+                Cards
+              </button>
+              <button
+                onClick={() => setViewMode('table')}
+                className={`px-3 py-1.5 text-sm rounded-md transition-all ${
+                  viewMode === 'table'
+                    ? 'bg-white text-gray-900 shadow-sm'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                <Filter className="h-4 w-4 inline mr-1" />
+                Table
+              </button>
+            </div>
+            
+            {/* Action Buttons */}
             <button
-              onClick={handleBulkVerify}
-              className="px-4 py-2 bg-green-500 text-white text-sm rounded-lg hover:bg-green-600 transition-colors"
+              onClick={fetchTransactions}
+              disabled={loading}
+              className="p-2.5 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+              title="Refresh transactions"
             >
-              <CheckCircle className="h-4 w-4 inline mr-2" />
-              Verify Selected ({selectedTransactions.length})
+              <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
             </button>
-          )}
+            
+            {selectedTransactions.length > 0 && (
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={handleBulkVerify}
+                  className="px-4 py-2.5 bg-emerald-500 text-white text-sm rounded-lg hover:bg-emerald-600 transition-colors flex items-center gap-2 shadow-sm"
+                >
+                  <CheckCircle className="h-4 w-4" />
+                  Verify ({selectedTransactions.length})
+                </button>
+                
+                {/* Bulk Category Update */}
+                <div className="relative">
+                  <select
+                    onChange={(e) => {
+                      if (e.target.value) {
+                        handleBulkCategoryUpdate(e.target.value as TransactionCategory);
+                        e.target.value = ''; // Reset selection
+                      }
+                    }}
+                    className="px-4 py-2.5 bg-blue-500 text-white text-sm rounded-lg hover:bg-blue-600 transition-colors appearance-none pr-8"
+                    defaultValue=""
+                  >
+                    <option value="" disabled>🏷️ Change Category</option>
+                    {categories.filter(cat => cat !== 'All').map(category => (
+                      <option key={category} value={category} className="text-gray-900">
+                        {category}
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown className="absolute right-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-white pointer-events-none" />
+                </div>
+                
+                <button
+                  onClick={handleBulkDelete}
+                  className="px-4 py-2.5 bg-red-500 text-white text-sm rounded-lg hover:bg-red-600 transition-colors flex items-center gap-2 shadow-sm"
+                >
+                  <Trash2 className="h-4 w-4" />
+                  Delete ({selectedTransactions.length})
+                </button>
+              </div>
+            )}
+            
+            <button
+              onClick={() => setShowNewTransactionForm(true)}
+              className="px-4 py-2.5 bg-gradient-to-r from-blue-500 to-purple-600 text-white text-sm rounded-lg hover:from-blue-600 hover:to-purple-700 transition-all flex items-center gap-2 shadow-sm"
+            >
+              <Plus className="h-4 w-4" />
+              Add Transaction
+            </button>
+          </div>
         </div>
       </div>
 
-      {/* Search and Filters */}
-      <div className="bg-white rounded-lg shadow p-4 sm:p-6">
-        <div className="space-y-4">
-          {/* Search */}
+      {/* Enhanced Search and Filters */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+        <div className="space-y-6">
+          {/* Search Bar with Enhanced Design */}
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+              <Search className="h-5 w-5 text-gray-400" />
+            </div>
             <input
               type="text"
-              placeholder="Search transactions..."
+              placeholder="Search by description, merchant, or category..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+              className="w-full pl-12 pr-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:bg-white transition-all text-sm placeholder-gray-500"
             />
+            {searchTerm && (
+              <button
+                onClick={() => setSearchTerm('')}
+                className="absolute inset-y-0 right-0 pr-4 flex items-center"
+              >
+                <XCircle className="h-4 w-4 text-gray-400 hover:text-gray-600" />
+              </button>
+            )}
           </div>
 
-          {/* Filter Toggle */}
-          <div className="flex justify-between items-center">
-            <span className="text-sm text-gray-600">{totalCount} transactions</span>
+          {/* Stats and Filter Toggle */}
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div className="flex items-center gap-6 text-sm">
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                <span className="text-gray-600">
+                  <span className="font-semibold text-gray-900">{totalCount}</span> transactions found
+                </span>
+              </div>
+              {selectedTransactions.length > 0 && (
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 bg-emerald-500 rounded-full"></div>
+                  <span className="text-gray-600">
+                    <span className="font-semibold text-gray-900">{selectedTransactions.length}</span> selected
+                  </span>
+                </div>
+              )}
+            </div>
+            
             <button
               onClick={() => setShowFilters(!showFilters)}
-              className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors flex items-center gap-2"
+              className={`px-4 py-2.5 rounded-lg flex items-center gap-2 transition-all ${
+                showFilters
+                  ? 'bg-blue-100 text-blue-700 border border-blue-200'
+                  : 'bg-gray-100 text-gray-700 border border-gray-200 hover:bg-gray-200'
+              }`}
             >
               <Filter className="h-4 w-4" />
-              <span className="hidden sm:inline">Filters</span>
+              <span className="font-medium">Advanced Filters</span>
               <ChevronDown className={`h-4 w-4 transform transition-transform ${showFilters ? 'rotate-180' : ''}`} />
             </button>
           </div>
         </div>
 
-        {/* Filters Panel */}
+        {/* Enhanced Filters Panel */}
         {showFilters && (
-          <div className="mt-4 pt-4 border-t border-gray-200 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {/* Category Filter */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Category</label>
-              <select
-                value={filters.category}
-                onChange={(e) => handleFilterChange('category', e.target.value)}
-                className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
-              >
-                {categories.map(category => (
-                  <option key={category} value={category}>{category}</option>
-                ))}
-              </select>
-            </div>
+          <div className="mt-6 pt-6 border-t border-gray-100">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              {/* Category Filter */}
+              <div className="space-y-2">
+                <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
+                  <Tag className="h-4 w-4 text-blue-500" />
+                  Category
+                </label>
+                <select
+                  value={filters.category}
+                  onChange={(e) => handleFilterChange('category', e.target.value)}
+                  className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:bg-white transition-all text-sm"
+                >
+                  {categories.map(category => (
+                    <option key={category} value={category}>{category}</option>
+                  ))}
+                </select>
+              </div>
 
-            {/* Type Filter */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Type</label>
-              <select
-                value={filters.transactionType}
-                onChange={(e) => handleFilterChange('transactionType', e.target.value)}
-                className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
-              >
-                <option value="all">All Types</option>
-                <option value="debit">Expenses</option>
-                <option value="credit">Income</option>
-              </select>
-            </div>
+              {/* Type Filter */}
+              <div className="space-y-2">
+                <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
+                  <TrendingUp className="h-4 w-4 text-green-500" />
+                  Transaction Type
+                </label>
+                <select
+                  value={filters.transactionType}
+                  onChange={(e) => handleFilterChange('transactionType', e.target.value)}
+                  className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:bg-white transition-all text-sm"
+                >
+                  <option value="all">All Types</option>
+                  <option value="debit">💸 Expenses (Debit)</option>
+                  <option value="credit">💰 Income (Credit)</option>
+                </select>
+              </div>
 
-            {/* Sort By */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Sort By</label>
-              <select
-                value={filters.sortBy}
-                onChange={(e) => handleFilterChange('sortBy', e.target.value)}
-                className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
-              >
-                <option value="date">Date</option>
-                <option value="amount">Amount</option>
-                <option value="description">Description</option>
-              </select>
-            </div>
+              {/* Sort By */}
+              <div className="space-y-2">
+                <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
+                  <Filter className="h-4 w-4 text-purple-500" />
+                  Sort By
+                </label>
+                <select
+                  value={filters.sortBy}
+                  onChange={(e) => handleFilterChange('sortBy', e.target.value)}
+                  className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:bg-white transition-all text-sm"
+                >
+                  <option value="date">📅 Date</option>
+                  <option value="amount">💵 Amount</option>
+                  <option value="description">📝 Description</option>
+                </select>
+              </div>
 
-            {/* Sort Order */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Order</label>
-              <select
-                value={filters.sortOrder}
-                onChange={(e) => handleFilterChange('sortOrder', e.target.value)}
-                className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
-              >
-                <option value="desc">Newest First</option>
-                <option value="asc">Oldest First</option>
-              </select>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* Transactions List */}
-      <div className="bg-white rounded-lg shadow overflow-hidden">
-        {loading ? (
-          <div className="p-8 text-center">
-            <RefreshCw className="h-8 w-8 animate-spin text-primary-500 mx-auto mb-4" />
-            <p className="text-gray-600">Loading transactions...</p>
-          </div>
-        ) : transactions.length === 0 ? (
-          <div className="p-8 text-center">
-            <DollarSign className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No transactions found</h3>
-            <p className="text-gray-600">Try adjusting your search or filters</p>
-          </div>
-        ) : (
-          <>
-            {/* Table Header */}
-            <div className="bg-gray-50 px-6 py-3 border-b border-gray-200">
-              <div className="flex items-center">
-                <input
-                  type="checkbox"
-                  checked={selectedTransactions.length === transactions.length}
-                  onChange={selectAllTransactions}
-                  className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
-                />
-                <span className="ml-3 text-sm font-medium text-gray-700">
-                  Select All ({transactions.length})
-                </span>
+              {/* Sort Order */}
+              <div className="space-y-2">
+                <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
+                  <ChevronDown className="h-4 w-4 text-orange-500" />
+                  Sort Order
+                </label>
+                <select
+                  value={filters.sortOrder}
+                  onChange={(e) => handleFilterChange('sortOrder', e.target.value)}
+                  className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:bg-white transition-all text-sm"
+                >
+                  <option value="desc">⬇️ Newest First</option>
+                  <option value="asc">⬆️ Oldest First</option>
+                </select>
               </div>
             </div>
-
-            {/* Transactions */}
-            <div className="divide-y divide-gray-200">
-              {transactions.map((transaction) => (
-                <div key={transaction._id} className="px-6 py-4 hover:bg-gray-50">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-4 flex-1 min-w-0">
-                      <input
-                        type="checkbox"
-                        checked={selectedTransactions.includes(transaction._id)}
-                        onChange={() => toggleTransactionSelection(transaction._id)}
-                        className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
-                      />
-                      
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-3 mb-2">
-                          <p className="text-sm font-medium text-gray-900 truncate">
-                            {transaction.description}
-                          </p>
-                          
-                          {!transaction.isVerified && (
-                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-                              AI Parsed
-                            </span>
-                          )}
-                        </div>
-                        
-                        <div className="flex items-center gap-4 text-sm text-gray-500">
-                          <span className="flex items-center gap-1">
-                            <Calendar className="h-3 w-3" />
-                            {format(new Date(transaction.date), 'MMM dd, yyyy')}
-                          </span>
-                          
-                          <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getCategoryColor(transaction.category)}`}>
-                            <Tag className="h-3 w-3 mr-1" />
-                            {transaction.category}
-                          </span>
-                          
-                          {transaction.merchant && (
-                            <span className="truncate">
-                              at {transaction.merchant}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                    
-                    <div className="flex items-center gap-4">
-                      <div className="text-right">
-                        <p className={`text-lg font-semibold ${
-                          transaction.amount >= 0 ? 'text-green-600' : 'text-red-600'
-                        }`}>
-                          {formatCurrency(transaction.amount)}
-                        </p>
-                      </div>
-                      
-                      <div className="flex items-center gap-2">
-                        <button 
-                          onClick={() => handleEditTransaction(transaction)}
-                          className="p-1 text-gray-400 hover:text-gray-600 rounded"
-                          title="Edit transaction"
-                        >
-                          <Edit3 className="h-4 w-4" />
-                        </button>
-                        <button 
-                          onClick={() => handleDeleteTransaction(transaction._id)}
-                          className="p-1 text-gray-400 hover:text-red-600 rounded"
-                          title="Delete transaction"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ))}
+            
+            {/* Filter Actions */}
+            <div className="flex items-center justify-between mt-6 pt-4 border-t border-gray-100">
+              <div className="text-sm text-gray-600">
+                {Object.values(filters).some(v => v !== 'All' && v !== 'all' && v !== 1 && v !== 20 && v !== 'date' && v !== 'desc') && (
+                  <span className="text-blue-600 font-medium">Filters applied</span>
+                )}
+              </div>
+              <button
+                onClick={() => setFilters({
+                  page: 1,
+                  limit: 20,
+                  category: 'All',
+                  transactionType: 'all',
+                  sortBy: 'date',
+                  sortOrder: 'desc'
+                })}
+                className="px-4 py-2 text-sm text-gray-600 hover:text-gray-900 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+              >
+                Clear Filters
+              </button>
             </div>
-          </>
+          </div>
         )}
       </div>
+
+      {/* Enhanced Transactions Display */}
+      {loading ? (
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-12 text-center">
+          <div className="animate-pulse">
+            <RefreshCw className="h-12 w-12 text-blue-500 mx-auto mb-6 animate-spin" />
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">Loading your transactions</h3>
+            <p className="text-gray-600">Fetching the latest session data...</p>
+          </div>
+        </div>
+      ) : transactions.length === 0 ? (
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-12 text-center">
+          <div className="max-w-sm mx-auto">
+            <div className="p-6 bg-gradient-to-br from-blue-50 to-purple-50 rounded-2xl mb-6">
+              <DollarSign className="h-16 w-16 text-gray-400 mx-auto" />
+            </div>
+            <h3 className="text-xl font-semibold text-gray-900 mb-3">No transactions found</h3>
+            <p className="text-gray-600 mb-6">
+              {searchTerm || Object.values(filters).some(v => v !== 'All' && v !== 'all' && v !== 1 && v !== 20 && v !== 'date' && v !== 'desc')
+                ? 'No transactions match your current search or filters. Try adjusting them to see more results.'
+                : 'Start by uploading a bank statement or adding transactions manually.'}
+            </p>
+            <div className="flex flex-col sm:flex-row gap-3 justify-center">
+              <button
+                onClick={() => setShowNewTransactionForm(true)}
+                className="px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg hover:from-blue-600 hover:to-purple-700 transition-all flex items-center gap-2 justify-center"
+              >
+                <Plus className="h-4 w-4" />
+                Add Transaction
+              </button>
+              {(searchTerm || Object.values(filters).some(v => v !== 'All' && v !== 'all' && v !== 1 && v !== 20 && v !== 'date' && v !== 'desc')) && (
+                <button
+                  onClick={() => {
+                    setSearchTerm('');
+                    setFilters({ page: 1, limit: 20, category: 'All', transactionType: 'all', sortBy: 'date', sortOrder: 'desc' });
+                  }}
+                  className="px-6 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+                >
+                  Clear Filters
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {/* Bulk Selection Header */}
+          {transactions.length > 0 && (
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <input
+                    type="checkbox"
+                    checked={selectedTransactions.length === transactions.length}
+                    onChange={selectAllTransactions}
+                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                  />
+                  <span className="text-sm font-medium text-gray-700">
+                    {selectedTransactions.length === 0
+                      ? `Select from ${transactions.length} transactions`
+                      : selectedTransactions.length === transactions.length
+                      ? `All ${transactions.length} transactions selected`
+                      : `${selectedTransactions.length} of ${transactions.length} selected`
+                    }
+                  </span>
+                </div>
+                {selectedTransactions.length > 0 && (
+                  <div className="text-xs text-gray-500">
+                    Use bulk actions above to edit selected transactions
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Transaction Cards */}
+          <div className={viewMode === 'cards' ? 'grid grid-cols-1 gap-4' : 'space-y-2'}>
+            {transactions.map((transaction) => (
+              viewMode === 'cards' ? (
+                <TransactionCard
+                  key={transaction._id}
+                  transaction={transaction}
+                  isSelected={selectedTransactions.includes(transaction._id)}
+                  onSelect={() => toggleTransactionSelection(transaction._id)}
+                  onEdit={() => handleEditTransaction(transaction)}
+                  onDelete={() => handleDeleteTransaction(transaction._id)}
+                  getCategoryColor={getCategoryColor}
+                />
+              ) : (
+                <TransactionTableRow
+                  key={transaction._id}
+                  transaction={transaction}
+                  isSelected={selectedTransactions.includes(transaction._id)}
+                  onSelect={() => toggleTransactionSelection(transaction._id)}
+                  onEdit={() => handleEditTransaction(transaction)}
+                  onDelete={() => handleDeleteTransaction(transaction._id)}
+                  getCategoryColor={getCategoryColor}
+                />
+              )
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Pagination */}
       {renderPagination()}
@@ -565,59 +783,76 @@ const EditTransactionModal: React.FC<EditTransactionModalProps> = ({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-lg p-6 w-full max-w-md">
-        <h2 className="text-lg font-semibold mb-4">Edit Transaction</h2>
+      <div className="bg-white rounded-xl p-6 w-full max-w-lg">
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-blue-100 rounded-lg">
+              <Edit3 className="h-5 w-5 text-blue-600" />
+            </div>
+            <h2 className="text-xl font-bold text-gray-900">Edit Transaction</h2>
+          </div>
+          <button
+            onClick={onClose}
+            className="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100"
+          >
+            <XCircle className="h-5 w-5" />
+          </button>
+        </div>
         
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-semibold text-gray-700 mb-2">
               Description
             </label>
             <input
               type="text"
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+              className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:bg-white transition-all"
+              placeholder="Enter transaction description"
               required
             />
           </div>
           
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Amount
-            </label>
-            <input
-              type="number"
-              step="0.01"
-              value={formData.amount}
-              onChange={(e) => setFormData({ ...formData, amount: parseFloat(e.target.value) })}
-              className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
-              required
-            />
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                Amount
+              </label>
+              <input
+                type="number"
+                step="0.01"
+                value={formData.amount}
+                onChange={(e) => setFormData({ ...formData, amount: parseFloat(e.target.value) })}
+                className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:bg-white transition-all"
+                placeholder="0.00"
+                required
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                Type
+              </label>
+              <select
+                value={formData.transactionType}
+                onChange={(e) => setFormData({ ...formData, transactionType: e.target.value as 'debit' | 'credit' })}
+                className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:bg-white transition-all"
+              >
+                <option value="debit">💸 Expense</option>
+                <option value="credit">💰 Income</option>
+              </select>
+            </div>
           </div>
           
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Type
-            </label>
-            <select
-              value={formData.transactionType}
-              onChange={(e) => setFormData({ ...formData, transactionType: e.target.value as 'debit' | 'credit' })}
-              className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
-            >
-              <option value="debit">Expense (Debit)</option>
-              <option value="credit">Income (Credit)</option>
-            </select>
-          </div>
-          
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-semibold text-gray-700 mb-2">
               Category
             </label>
             <select
               value={formData.category}
               onChange={(e) => setFormData({ ...formData, category: e.target.value as TransactionCategory })}
-              className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+              className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:bg-white transition-all"
             >
               {categories.map(category => (
                 <option key={category} value={category}>{category}</option>
@@ -626,42 +861,43 @@ const EditTransactionModal: React.FC<EditTransactionModalProps> = ({
           </div>
           
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Merchant
+            <label className="block text-sm font-semibold text-gray-700 mb-2">
+              Merchant (Optional)
             </label>
             <input
               type="text"
               value={formData.merchant}
               onChange={(e) => setFormData({ ...formData, merchant: e.target.value })}
-              className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
-              placeholder="Optional"
+              className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:bg-white transition-all"
+              placeholder="e.g. Amazon, Starbucks"
             />
           </div>
           
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-semibold text-gray-700 mb-2">
               Date
             </label>
             <input
               type="date"
               value={formData.date}
               onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-              className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+              className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:bg-white transition-all"
               required
             />
           </div>
           
-          <div className="flex gap-3 pt-4">
+          <div className="flex gap-3 pt-6">
             <button
               type="submit"
-              className="flex-1 bg-primary-500 text-white py-2 px-4 rounded-lg hover:bg-primary-600 transition-colors"
+              className="flex-1 bg-gradient-to-r from-green-500 to-emerald-600 text-white py-3 px-6 rounded-xl hover:from-green-600 hover:to-emerald-700 transition-all font-semibold flex items-center justify-center gap-2"
             >
+              <CheckCircle className="w-4 h-4" />
               Save Changes
             </button>
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 bg-gray-300 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-400 transition-colors"
+              className="flex-1 bg-gray-100 text-gray-700 py-3 px-6 rounded-xl hover:bg-gray-200 transition-colors font-semibold"
             >
               Cancel
             </button>
@@ -681,29 +917,420 @@ interface DeleteConfirmationModalProps {
 const DeleteConfirmationModal: React.FC<DeleteConfirmationModalProps> = ({ onConfirm, onCancel }) => {
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-lg p-6 w-full max-w-sm">
+      <div className="bg-white rounded-xl p-6 w-full max-w-md">
         <div className="text-center">
-          <Trash2 className="h-12 w-12 text-red-500 mx-auto mb-4" />
-          <h2 className="text-lg font-semibold mb-2">Delete Transaction</h2>
-          <p className="text-gray-600 mb-6">
-            Are you sure you want to delete this transaction? This action cannot be undone.
+          <div className="p-4 bg-red-100 rounded-2xl mx-auto w-fit mb-6">
+            <Trash2 className="h-12 w-12 text-red-600" />
+          </div>
+          <h2 className="text-xl font-bold text-gray-900 mb-3">Delete Transaction</h2>
+          <p className="text-gray-600 mb-8 leading-relaxed">
+            Are you sure you want to permanently delete this transaction? 
+            <br />
+            <span className="text-sm text-red-600 font-medium">This action cannot be undone.</span>
           </p>
           
           <div className="flex gap-3">
             <button
               onClick={onConfirm}
-              className="flex-1 bg-red-500 text-white py-2 px-4 rounded-lg hover:bg-red-600 transition-colors"
+              className="flex-1 bg-gradient-to-r from-red-500 to-red-600 text-white py-3 px-6 rounded-xl hover:from-red-600 hover:to-red-700 transition-all font-semibold flex items-center justify-center gap-2"
             >
-              Delete
+              <Trash2 className="w-4 h-4" />
+              Delete Forever
             </button>
             <button
               onClick={onCancel}
-              className="flex-1 bg-gray-300 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-400 transition-colors"
+              className="flex-1 bg-gray-100 text-gray-700 py-3 px-6 rounded-xl hover:bg-gray-200 transition-colors font-semibold"
+            >
+              Keep Transaction
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Transaction Card Component with Modern Design
+interface TransactionCardProps {
+  transaction: Transaction;
+  isSelected: boolean;
+  onSelect: () => void;
+  onEdit: () => void;
+  onDelete: () => void;
+  getCategoryColor: (category: string) => string;
+}
+
+const TransactionCard: React.FC<TransactionCardProps> = ({
+  transaction,
+  isSelected,
+  onSelect,
+  onEdit,
+  onDelete,
+  getCategoryColor
+}) => {
+  const isPositive = transaction.amount >= 0;
+  
+  return (
+    <div className={`bg-white rounded-xl border-2 transition-all duration-200 hover:shadow-md ${
+      isSelected 
+        ? 'border-blue-300 shadow-lg ring-2 ring-blue-100' 
+        : 'border-gray-100 hover:border-gray-200'
+    }`}>
+      <div className="p-6">
+        <div className="flex items-start justify-between">
+          <div className="flex items-start gap-4 flex-1">
+            {/* Selection Checkbox */}
+            <div className="flex items-center pt-1">
+              <input
+                type="checkbox"
+                checked={isSelected}
+                onChange={onSelect}
+                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+              />
+            </div>
+            
+            {/* Transaction Icon */}
+            <div className={`flex-shrink-0 w-12 h-12 rounded-xl flex items-center justify-center ${
+              isPositive ? 'bg-green-100' : 'bg-red-100'
+            }`}>
+              {isPositive ? (
+                <TrendingUp className={`w-6 h-6 text-green-600`} />
+              ) : (
+                <TrendingDown className={`w-6 h-6 text-red-600`} />
+              )}
+            </div>
+            
+            {/* Transaction Details */}
+            <div className="flex-1 min-w-0">
+              {/* Description and Status */}
+              <div className="flex items-center gap-3 mb-2">
+                <h3 className="text-lg font-semibold text-gray-900 truncate">
+                  {transaction.description}
+                </h3>
+                {!transaction.isVerified && (
+                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800 border border-amber-200">
+                    <AlertCircle className="w-3 h-3 mr-1" />
+                    AI Parsed
+                  </span>
+                )}
+              </div>
+              
+              {/* Meta Information */}
+              <div className="flex items-center gap-4 text-sm text-gray-600 mb-3">
+                <span className="flex items-center gap-1.5">
+                  <Calendar className="w-4 h-4 text-gray-400" />
+                  {format(new Date(transaction.date), 'MMM dd, yyyy')}
+                </span>
+                
+                {transaction.merchant && (
+                  <span className="flex items-center gap-1.5">
+                    <Building2 className="w-4 h-4 text-gray-400" />
+                    <span className="truncate">{transaction.merchant}</span>
+                  </span>
+                )}
+              </div>
+              
+              {/* Category Badge */}
+              <div className="flex items-center gap-2">
+                <span className={`inline-flex items-center px-3 py-1 rounded-lg text-xs font-medium ${getCategoryColor(transaction.category)}`}>
+                  <Tag className="w-3 h-3 mr-1.5" />
+                  {transaction.category}
+                </span>
+                <span className={`inline-flex items-center px-3 py-1 rounded-lg text-xs font-medium ${
+                  isPositive ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-red-50 text-red-700 border border-red-200'
+                }`}>
+                  {isPositive ? 'Income' : 'Expense'}
+                </span>
+              </div>
+            </div>
+          </div>
+          
+          {/* Amount and Actions */}
+          <div className="flex flex-col items-end gap-4">
+            {/* Amount */}
+            <div className="text-right">
+              <div className={`text-2xl font-bold ${
+                isPositive ? 'text-green-600' : 'text-red-600'
+              }`}>
+                {formatCurrency(transaction.amount)}
+              </div>
+              <div className="text-xs text-gray-500 mt-1">
+                {isPositive ? '+' : '-'} {formatCurrency(Math.abs(transaction.amount))}
+              </div>
+            </div>
+            
+            {/* Action Buttons */}
+            <div className="flex items-center gap-2">
+              <button
+                onClick={onEdit}
+                className="p-2.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
+                title="Edit transaction"
+              >
+                <Edit3 className="w-4 h-4" />
+              </button>
+              <button
+                onClick={onDelete}
+                className="p-2.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
+                title="Delete transaction"
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Transaction Table Row Component (Compact View)
+const TransactionTableRow: React.FC<TransactionCardProps> = ({
+  transaction,
+  isSelected,
+  onSelect,
+  onEdit,
+  onDelete,
+  getCategoryColor
+}) => {
+  const isPositive = transaction.amount >= 0;
+  
+  return (
+    <div className={`bg-white rounded-lg border transition-all duration-200 hover:shadow-sm ${
+      isSelected 
+        ? 'border-blue-300 shadow-sm ring-1 ring-blue-100' 
+        : 'border-gray-200 hover:border-gray-300'
+    }`}>
+      <div className="px-6 py-4">
+        <div className="flex items-center gap-4">
+          {/* Selection */}
+          <input
+            type="checkbox"
+            checked={isSelected}
+            onChange={onSelect}
+            className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+          />
+          
+          {/* Icon */}
+          <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
+            isPositive ? 'bg-green-100' : 'bg-red-100'
+          }`}>
+            {isPositive ? (
+              <TrendingUp className="w-4 h-4 text-green-600" />
+            ) : (
+              <TrendingDown className="w-4 h-4 text-red-600" />
+            )}
+          </div>
+          
+          {/* Description and Details */}
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 mb-1">
+              <p className="font-semibold text-gray-900 truncate">
+                {transaction.description}
+              </p>
+              {!transaction.isVerified && (
+                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800">
+                  AI
+                </span>
+              )}
+            </div>
+            <div className="flex items-center gap-4 text-xs text-gray-500">
+              <span>{format(new Date(transaction.date), 'MMM dd, yyyy')}</span>
+              {transaction.merchant && <span>• {transaction.merchant}</span>}
+            </div>
+          </div>
+          
+          {/* Category */}
+          <div className="hidden sm:block">
+            <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium ${getCategoryColor(transaction.category)}`}>
+              {transaction.category}
+            </span>
+          </div>
+          
+          {/* Amount */}
+          <div className="text-right">
+            <div className={`font-bold ${
+              isPositive ? 'text-green-600' : 'text-red-600'
+            }`}>
+              {formatCurrency(transaction.amount)}
+            </div>
+          </div>
+          
+          {/* Actions */}
+          <div className="flex items-center gap-1">
+            <button
+              onClick={onEdit}
+              className="p-1.5 text-gray-400 hover:text-blue-600 rounded"
+              title="Edit"
+            >
+              <Edit3 className="w-3.5 h-3.5" />
+            </button>
+            <button
+              onClick={onDelete}
+              className="p-1.5 text-gray-400 hover:text-red-600 rounded"
+              title="Delete"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// New Transaction Modal Component
+interface NewTransactionModalProps {
+  onSave: (formData: {
+    description: string;
+    amount: number;
+    category: TransactionCategory;
+    merchant?: string;
+    transactionType: 'debit' | 'credit';
+    date: string;
+  }) => void;
+  onClose: () => void;
+  categories: TransactionCategory[];
+}
+
+const NewTransactionModal: React.FC<NewTransactionModalProps> = ({ 
+  onSave, 
+  onClose, 
+  categories 
+}) => {
+  const [formData, setFormData] = useState({
+    description: '',
+    amount: 0,
+    category: 'Other' as TransactionCategory,
+    merchant: '',
+    transactionType: 'debit' as 'debit' | 'credit',
+    date: new Date().toISOString().split('T')[0]
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    // Pass the form data directly without additional Transaction fields
+    onSave({
+      ...formData,
+      amount: formData.transactionType === 'credit' ? formData.amount : -formData.amount
+    });
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+      <div className="bg-white rounded-xl p-6 w-full max-w-lg">
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-xl font-bold text-gray-900">Add New Transaction</h2>
+          <button
+            onClick={onClose}
+            className="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100"
+          >
+            <XCircle className="h-5 w-5" />
+          </button>
+        </div>
+        
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">
+              Description
+            </label>
+            <input
+              type="text"
+              value={formData.description}
+              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:bg-white transition-all"
+              placeholder="Enter transaction description"
+              required
+            />
+          </div>
+          
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                Amount
+              </label>
+              <input
+                type="number"
+                step="0.01"
+                value={formData.amount}
+                onChange={(e) => setFormData({ ...formData, amount: parseFloat(e.target.value) })}
+                className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:bg-white transition-all"
+                placeholder="0.00"
+                required
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                Type
+              </label>
+              <select
+                value={formData.transactionType}
+                onChange={(e) => setFormData({ ...formData, transactionType: e.target.value as 'debit' | 'credit' })}
+                className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:bg-white transition-all"
+              >
+                <option value="debit">💸 Expense</option>
+                <option value="credit">💰 Income</option>
+              </select>
+            </div>
+          </div>
+          
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">
+              Category
+            </label>
+            <select
+              value={formData.category}
+              onChange={(e) => setFormData({ ...formData, category: e.target.value as TransactionCategory })}
+              className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:bg-white transition-all"
+            >
+              {categories.map(category => (
+                <option key={category} value={category}>{category}</option>
+              ))}
+            </select>
+          </div>
+          
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">
+              Merchant (Optional)
+            </label>
+            <input
+              type="text"
+              value={formData.merchant}
+              onChange={(e) => setFormData({ ...formData, merchant: e.target.value })}
+              className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:bg-white transition-all"
+              placeholder="e.g. Amazon, Starbucks"
+            />
+          </div>
+          
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">
+              Date
+            </label>
+            <input
+              type="date"
+              value={formData.date}
+              onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+              className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:bg-white transition-all"
+              required
+            />
+          </div>
+          
+          <div className="flex gap-3 pt-6">
+            <button
+              type="submit"
+              className="flex-1 bg-gradient-to-r from-blue-500 to-purple-600 text-white py-3 px-6 rounded-xl hover:from-blue-600 hover:to-purple-700 transition-all font-semibold"
+            >
+              Add Transaction
+            </button>
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex-1 bg-gray-100 text-gray-700 py-3 px-6 rounded-xl hover:bg-gray-200 transition-colors font-semibold"
             >
               Cancel
             </button>
           </div>
-        </div>
+        </form>
       </div>
     </div>
   );
