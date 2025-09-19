@@ -12,7 +12,6 @@ import {
   Tag,
   RefreshCw,
   Plus,
-  Eye,
   AlertCircle,
   TrendingUp,
   TrendingDown,
@@ -47,7 +46,6 @@ export const Transactions: React.FC = () => {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [transactionToDelete, setTransactionToDelete] = useState<string | null>(null);
   const [showNewTransactionForm, setShowNewTransactionForm] = useState(false);
-  const [viewMode, setViewMode] = useState<'cards' | 'table'>('cards');
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
 
   // Categories for filtering
@@ -374,33 +372,6 @@ export const Transactions: React.FC = () => {
           </div>
           
           <div className="flex items-center gap-3">
-            {/* View Mode Toggle */}
-            <div className="flex items-center bg-gray-100 rounded-lg p-1">
-              <button
-                onClick={() => setViewMode('cards')}
-                className={`px-3 py-1.5 text-sm rounded-md transition-all ${
-                  viewMode === 'cards'
-                    ? 'bg-white text-gray-900 shadow-sm'
-                    : 'text-gray-600 hover:text-gray-900'
-                }`}
-              >
-                <Eye className="h-4 w-4 inline mr-1" />
-                Cards
-              </button>
-              <button
-                onClick={() => setViewMode('table')}
-                className={`px-3 py-1.5 text-sm rounded-md transition-all ${
-                  viewMode === 'table'
-                    ? 'bg-white text-gray-900 shadow-sm'
-                    : 'text-gray-600 hover:text-gray-900'
-                }`}
-              >
-                <Filter className="h-4 w-4 inline mr-1" />
-                Table
-              </button>
-            </div>
-            
-            {/* Action Buttons */}
             <button
               onClick={fetchTransactions}
               disabled={loading}
@@ -693,31 +664,99 @@ export const Transactions: React.FC = () => {
             </div>
           )}
 
-          {/* Transaction Cards */}
-          <div className={viewMode === 'cards' ? 'grid grid-cols-1 gap-4' : 'space-y-2'}>
-            {transactions.map((transaction) => (
-              viewMode === 'cards' ? (
-                <TransactionCard
-                  key={transaction._id}
-                  transaction={transaction}
-                  isSelected={selectedTransactions.includes(transaction._id)}
-                  onSelect={() => toggleTransactionSelection(transaction._id)}
-                  onEdit={() => handleEditTransaction(transaction)}
-                  onDelete={() => handleDeleteTransaction(transaction._id)}
-                  getCategoryColor={getCategoryColor}
+          {/* Clean Transaction Table */}
+          <div className="bg-white rounded-lg shadow overflow-hidden">
+            {/* Table Header */}
+            <div className="bg-gray-50 px-6 py-3 border-b border-gray-200">
+              <div className="flex items-center">
+                <input
+                  type="checkbox"
+                  checked={selectedTransactions.length === transactions.length && transactions.length > 0}
+                  onChange={selectAllTransactions}
+                  className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
                 />
-              ) : (
-                <TransactionTableRow
-                  key={transaction._id}
-                  transaction={transaction}
-                  isSelected={selectedTransactions.includes(transaction._id)}
-                  onSelect={() => toggleTransactionSelection(transaction._id)}
-                  onEdit={() => handleEditTransaction(transaction)}
-                  onDelete={() => handleDeleteTransaction(transaction._id)}
-                  getCategoryColor={getCategoryColor}
-                />
-              )
-            ))}
+                <span className="ml-3 text-sm font-medium text-gray-700">
+                  Select All ({transactions.length})
+                </span>
+              </div>
+            </div>
+
+            {/* Transactions */}
+            <div className="divide-y divide-gray-200">
+              {transactions.map((transaction) => (
+                <div key={transaction._id} className="px-6 py-4 hover:bg-gray-50">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-4 flex-1 min-w-0">
+                      <input
+                        type="checkbox"
+                        checked={selectedTransactions.includes(transaction._id)}
+                        onChange={() => toggleTransactionSelection(transaction._id)}
+                        className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
+                      />
+                      
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-3 mb-2">
+                          <p className="text-sm font-medium text-gray-900 truncate">
+                            {transaction.description}
+                          </p>
+                          
+                          {!transaction.isVerified && (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                              AI Parsed
+                            </span>
+                          )}
+                        </div>
+                        
+                        <div className="flex items-center gap-4 text-sm text-gray-500">
+                          <span className="flex items-center gap-1">
+                            <Calendar className="h-3 w-3" />
+                            {format(new Date(transaction.date), 'MMM dd, yyyy')}
+                          </span>
+                          
+                          <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getCategoryColor(transaction.category)}`}>
+                            <Tag className="h-3 w-3 mr-1" />
+                            {transaction.category}
+                          </span>
+                          
+                          {transaction.merchant && (
+                            <span className="truncate">
+                              at {transaction.merchant}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center gap-4">
+                      <div className="text-right">
+                        <p className={`text-lg font-semibold ${
+                          transaction.amount >= 0 ? 'text-green-600' : 'text-red-600'
+                        }`}>
+                          {formatCurrency(transaction.amount)}
+                        </p>
+                      </div>
+                      
+                      <div className="flex items-center gap-2">
+                        <button 
+                          onClick={() => handleEditTransaction(transaction)}
+                          className="p-1 text-gray-400 hover:text-gray-600 rounded"
+                          title="Edit transaction"
+                        >
+                          <Edit3 className="h-4 w-4" />
+                        </button>
+                        <button 
+                          onClick={() => handleDeleteTransaction(transaction._id)}
+                          className="p-1 text-gray-400 hover:text-red-600 rounded"
+                          title="Delete transaction"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       )}
@@ -1335,3 +1374,4 @@ const NewTransactionModal: React.FC<NewTransactionModalProps> = ({
     </div>
   );
 };
+
