@@ -99,30 +99,34 @@ const uploadStatement = async (req, res) => {
       });
     }
 
+    // 🎆 SESSION-BASED MANAGEMENT: Create new session and preserve old data
+    const sessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    console.log(`🆆 Starting new session: ${sessionId}`);
+    console.log('💾 Keeping existing transactions in database, new session will show only current upload data');
+    
+    // Count existing transactions for logging
+    const existingCount = await Transaction.countDocuments();
+    console.log(`📁 Found ${existingCount} existing transactions in database (will be preserved)`);
    
     const savedTransactions = [];
-    let duplicateCount = 0;
+    let errorCount = 0;
     
+    // Save all new transactions with sessionId (keeping old data intact)
     for (const transactionData of parsedTransactions) {
       try {
-        // Check for potential duplicates (same date, amount, and description)
-        const existingTransaction = await Transaction.findOne({
-          date: transactionData.date,
-          amount: transactionData.amount,
-          description: transactionData.description
-        });
-
-        if (existingTransaction) {
-          duplicateCount++;
-          console.log(`⚠️ Duplicate transaction found: ${transactionData.description}`);
-          continue;
-        }
-
-        const newTransaction = new Transaction(transactionData);
+        // Add sessionId to transaction data
+        const transactionWithSession = {
+          ...transactionData,
+          sessionId: sessionId
+        };
+        
+        const newTransaction = new Transaction(transactionWithSession);
         const savedTransaction = await newTransaction.save();
         savedTransactions.push(savedTransaction);
+        console.log(`💾 Saved to session ${sessionId}: ${transactionData.description} - ${transactionData.amount}`);
       } catch (saveError) {
-        console.error('Error saving transaction:', saveError.message);
+        console.error('❌ Error saving transaction:', saveError.message);
+        errorCount++;
         // Continue processing other transactions
       }
     }
@@ -132,31 +136,29 @@ const uploadStatement = async (req, res) => {
       fs.unlinkSync(filePath);
     }
 
-    // Prepare response
+    // Prepare response for session-based upload
     const response = {
       success: true,
       message: savedTransactions.length > 0 
-        ? `Successfully processed bank statement!`
-        : 'All transactions were duplicates - no new data added',
+        ? `Successfully processed new bank statement! Dashboard updated with fresh data.`
+        : 'Failed to save transactions from the uploaded file',
       data: {
         totalParsed: parsedTransactions.length,
         totalSaved: savedTransactions.length,
-        duplicatesSkipped: duplicateCount,
+        errorCount: errorCount,
+        previousDataPreserved: existingCount, // Changed from cleared to preserved
         transactions: savedTransactions,
-        isDuplicateOnly: savedTransactions.length === 0 && duplicateCount > 0
+        isNewSession: true, // Flag to indicate this is a new session
+        sessionId: sessionId, // Unique identifier for this session
+        sessionMessage: `Session ${sessionId}: ${existingCount} previous transactions preserved in database. UI showing ${savedTransactions.length} new transactions.`
       }
     };
 
-    if (duplicateCount > 0) {
-      response.warning = `${duplicateCount} duplicate transactions were skipped`;
-      
-      
-      if (savedTransactions.length === 0) {
-        response.message = `All ${duplicateCount} transactions already exist in your records`;
-        response.data.shouldRedirectToDashboard = true;
-      }
+    if (errorCount > 0) {
+      response.warning = `${errorCount} transactions had errors and couldn't be saved`;
     }
 
+    console.log(`🎉 Upload complete! Saved ${savedTransactions.length} transactions in new session`);
     res.json(response);
 
   } catch (error) {

@@ -63,17 +63,18 @@ export const FileUpload: React.FC<FileUploadProps> = ({
           onUploadSuccess(response.data);
         }
 
-        console.log('✅ Upload successful:', {
+        console.log('✅ Session-based upload successful:', {
           totalParsed: response.data.totalParsed,
           totalSaved: response.data.totalSaved,
-          duplicatesSkipped: response.data.duplicatesSkipped,
-          isDuplicateOnly: response.data.isDuplicateOnly
+          previousDataPreserved: response.data.previousDataPreserved,
+          isNewSession: response.data.isNewSession,
+          sessionMessage: response.data.sessionMessage
         });
 
-        // Auto-reset after 3 seconds on success
+        // Auto-reset after 4 seconds for session-based uploads
         setTimeout(() => {
           resetUploadState();
-        }, 3000);
+        }, 4000);
       } else {
         throw new Error(response.error || 'Upload failed');
       }
@@ -144,7 +145,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
             Processing your bank statement...
           </h3>
           <p className="text-sm text-gray-600 mb-4">
-            Our AI is analyzing and extracting transaction data
+            💾 Preserving existing data and analyzing new transactions with AI
           </p>
           
           {uploadedFile && (
@@ -170,10 +171,10 @@ export const FileUpload: React.FC<FileUploadProps> = ({
         <div className="text-center">
           <CheckCircle className="mx-auto h-12 w-12 text-success-500 mb-4" />
           <h3 className="text-lg font-medium text-success-900 mb-2">
-            Processing Complete!
+            New Session Started!
           </h3>
           <p className="text-sm text-success-700">
-            Your bank statement has been processed. Check your dashboard for the latest data.
+            🎆 Dashboard showing your new statement data. All previous data preserved in database.
           </p>
         </div>
       );

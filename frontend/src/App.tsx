@@ -13,29 +13,33 @@ function App() {
   const dashboardRefreshRef = useRef<(() => void) | null>(null);
 
   const handleUploadSuccess = (data: UploadResponse) => {
-    console.log('✅ Upload completed:', {
+    console.log('✅ Session-based upload completed:', {
       totalParsed: data.totalParsed,
       totalSaved: data.totalSaved,
-      duplicatesSkipped: data.duplicatesSkipped,
-      isDuplicateOnly: data.isDuplicateOnly
+      previousDataPreserved: data.previousDataPreserved || 0,
+      isNewSession: data.isNewSession || false,
+      sessionMessage: data.sessionMessage
     });
     
     setShowUploadSuccess(true);
     
+    // Immediately refresh dashboard data for new session
     if (dashboardRefreshRef.current) {
       dashboardRefreshRef.current();
     }
     
-    const switchDelay = data.isDuplicateOnly ? 1500 : 2000;
+    // Switch to dashboard faster for session-based uploads since it's always new data
+    const switchDelay = 2500;
     setTimeout(() => {
       setActiveTab('dashboard');
       setShowUploadSuccess(false);
       
+      // Additional refresh to ensure data is loaded
       setTimeout(() => {
         if (dashboardRefreshRef.current) {
           dashboardRefreshRef.current();
         }
-      }, 500);
+      }, 300);
     }, switchDelay);
   };
 
@@ -62,7 +66,7 @@ function App() {
                 Upload Bank Statement
               </h2>
               <p className="text-gray-600">
-                Upload your bank statement to automatically extract and categorize transactions using AI.
+                💾 Upload your bank statement to start a fresh session. Previous data will be preserved in the database.
               </p>
             </div>
             
@@ -74,10 +78,10 @@ function App() {
                   </div>
                   <div>
                     <h3 className="text-sm font-medium text-success-800">
-                      Upload Complete!
+                      New Session Started!
                     </h3>
                     <p className="text-sm text-success-700 mt-1">
-                      Redirecting to dashboard to view your transactions...
+                      💾 Dashboard updated with fresh data. Previous transactions preserved in database.
                     </p>
                   </div>
                 </div>
@@ -92,13 +96,14 @@ function App() {
             
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
               <h3 className="text-lg font-semibold text-blue-900 mb-4">
-                💡 Tips for Better Results
+                💾 Session-Based Finance Tracker
               </h3>
               <ul className="space-y-2 text-sm text-blue-800">
+                <li>• Each upload starts a fresh session - previous data is preserved in database</li>
+                <li>• Perfect for analyzing individual statements while keeping historical data safe</li>
                 <li>• Use clear, high-quality PDF statements for best AI parsing results</li>
                 <li>• CSV files should include Date, Amount, and Description columns</li>
                 <li>• Review AI-parsed transactions and correct any mistakes</li>
-                <li>• Duplicate transactions are automatically detected and skipped</li>
               </ul>
             </div>
           </div>

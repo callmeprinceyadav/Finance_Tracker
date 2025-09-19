@@ -1,6 +1,21 @@
 const Transaction = require('../models/Transaction');
 
-// Get all transactions with optional filtering
+// Helper function to get the most recent session ID
+const getCurrentSessionId = async () => {
+  try {
+    const mostRecentTransaction = await Transaction.findOne(
+      { sessionId: { $exists: true, $ne: null } },
+      { sessionId: 1 },
+      { sort: { createdAt: -1 } }
+    );
+    return mostRecentTransaction?.sessionId || null;
+  } catch (error) {
+    console.error('Error getting current session ID:', error);
+    return null;
+  }
+};
+
+// Get all transactions with optional filtering (session-based)
 const getTransactions = async (req, res) => {
   try {
     const {
@@ -15,8 +30,16 @@ const getTransactions = async (req, res) => {
       search
     } = req.query;
 
+    // Get current session ID to filter transactions
+    const currentSessionId = await getCurrentSessionId();
     
     const filter = {};
+    
+    // Filter by current session if exists
+    if (currentSessionId) {
+      filter.sessionId = currentSessionId;
+      console.log(`🔍 Filtering transactions by session: ${currentSessionId}`);
+    }
     
     if (category && category !== 'All') {
       filter.category = category;
@@ -93,27 +116,86 @@ const getDashboardData = async (req, res) => {
     let targetMonth = month ? parseInt(month) : currentDate.getMonth() + 1;
     let targetYear = year ? parseInt(year) : currentDate.getFullYear();
 
+    // Get current session ID for filtering
+    const currentSessionId = await getCurrentSessionId();
+    console.log(`📈 Dashboard data filtered by session: ${currentSessionId || 'No session found'}`);
     
-    let monthlySummary = await Transaction.getMonthlySummary(targetYear, targetMonth);
+    // Base filter for current session
+    const sessionFilter = currentSessionId ? { sessionId: currentSessionId } : {};
+
+    // Calculate monthly summary with session filter
+    const startOfMonth = new Date(targetYear, targetMonth - 1, 1);
+    const endOfMonth = new Date(targetYear, targetMonth, 0);
     
+    let monthlySummary = await Transaction.aggregate([
+      {
+        $match: {
+          ...sessionFilter,
+          date: { $gte: startOfMonth, $lte: endOfMonth }
+        }
+      },
+      {
+        $group: {
+          _id: null,
+          totalIncome: {
+            $sum: {
+              $cond: [{ $gt: ['$amount', 0] }, '$amount', 0]
+            }
+          },
+          totalExpenses: {
+            $sum: {
+              $cond: [{ $lt: ['$amount', 0] }, { $abs: '$amount' }, 0]
+            }
+          },
+          transactionCount: { $sum: 1 }
+        }
+      }
+    ]);
     
+    // If no data for current month in current session, check if there are any transactions in session
     if (!monthlySummary || monthlySummary.length === 0 || monthlySummary[0].transactionCount === 0) {
-      const mostRecentTransaction = await Transaction.findOne({}).sort({ date: -1 });
+      const mostRecentTransaction = await Transaction.findOne(sessionFilter).sort({ date: -1 });
       if (mostRecentTransaction) {
         const recentDate = new Date(mostRecentTransaction.date);
         targetMonth = recentDate.getMonth() + 1;
         targetYear = recentDate.getFullYear();
-        monthlySummary = await Transaction.getMonthlySummary(targetYear, targetMonth);
+        
+        // Recalculate for the most recent month with data
+        const newStartOfMonth = new Date(targetYear, targetMonth - 1, 1);
+        const newEndOfMonth = new Date(targetYear, targetMonth, 0);
+        
+        monthlySummary = await Transaction.aggregate([
+          {
+            $match: {
+              ...sessionFilter,
+              date: { $gte: newStartOfMonth, $lte: newEndOfMonth }
+            }
+          },
+          {
+            $group: {
+              _id: null,
+              totalIncome: {
+                $sum: {
+                  $cond: [{ $gt: ['$amount', 0] }, '$amount', 0]
+                }
+              },
+              totalExpenses: {
+                $sum: {
+                  $cond: [{ $lt: ['$amount', 0] }, { $abs: '$amount' }, 0]
+                }
+              },
+              transactionCount: { $sum: 1 }
+            }
+          }
+        ]);
       }
     }
     
-    
-    const startOfMonth = new Date(targetYear, targetMonth - 1, 1);
-    const endOfMonth = new Date(targetYear, targetMonth, 0);
-    
+    // Use the same date range for category breakdown
     const categoryBreakdown = await Transaction.aggregate([
       {
         $match: {
+          ...sessionFilter,
           date: { $gte: startOfMonth, $lte: endOfMonth },
           amount: { $lt: 0 } // Only expenses
         }
@@ -131,13 +213,16 @@ const getDashboardData = async (req, res) => {
     ]);
 
     
-    const recentTransactions = await Transaction.find()
+    const recentTransactions = await Transaction.find(sessionFilter)
       .sort({ date: -1, createdAt: -1 })
       .limit(20);
 
     
-    const totalTransactions = await Transaction.countDocuments();
+    const totalTransactions = await Transaction.countDocuments(sessionFilter);
     const avgTransactionAmount = await Transaction.aggregate([
+      {
+        $match: sessionFilter
+      },
       {
         $group: {
           _id: null,
@@ -150,6 +235,7 @@ const getDashboardData = async (req, res) => {
     const monthlyTrend = await Transaction.aggregate([
       {
         $match: {
+          ...sessionFilter,
           date: {
             $gte: new Date(targetYear, targetMonth - 7, 1),
             $lte: endOfMonth
@@ -205,6 +291,7 @@ const getDashboardData = async (req, res) => {
           month: targetMonth,
           year: targetYear,
           totalTransactions,
+          currentSessionId: currentSessionId,
           lastUpdated: new Date().toISOString()
         }
       }
@@ -326,10 +413,14 @@ const deleteTransaction = async (req, res) => {
 // Create transaction manually
 const createTransaction = async (req, res) => {
   try {
+    // Get current session ID to assign to manually created transaction
+    const currentSessionId = await getCurrentSessionId();
+    
     const transactionData = {
       ...req.body,
       parsedBy: 'manual',
-      isVerified: true
+      isVerified: true,
+      sessionId: currentSessionId // Assign to current session so it appears in UI
     };
 
     const newTransaction = new Transaction(transactionData);
@@ -393,6 +484,13 @@ const getSpendingAnalytics = async (req, res) => {
   try {
     const { timeframe = 'month' } = req.query;
     
+    // Get current session ID for filtering
+    const currentSessionId = await getCurrentSessionId();
+    console.log(`📊 Analytics filtered by session: ${currentSessionId || 'No session found'}`);
+    
+    // Base filter for current session
+    const sessionFilter = currentSessionId ? { sessionId: currentSessionId } : {};
+    
     let dateRange = {};
     const currentDate = new Date();
 
@@ -415,6 +513,7 @@ const getSpendingAnalytics = async (req, res) => {
     const topCategories = await Transaction.aggregate([
       {
         $match: {
+          ...sessionFilter,
           date: dateRange,
           amount: { $lt: 0 }
         }
@@ -434,6 +533,7 @@ const getSpendingAnalytics = async (req, res) => {
     const topMerchants = await Transaction.aggregate([
       {
         $match: {
+          ...sessionFilter,
           date: dateRange,
           amount: { $lt: 0 },
           merchant: { $ne: null }

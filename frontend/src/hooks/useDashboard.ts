@@ -115,6 +115,10 @@ export const useDashboard = (initialMonth?: number, initialYear?: number) => {
     
     categoryBreakdown: state.data?.categoryBreakdown || [],
     recentTransactions: state.data?.recentTransactions || [],
-    monthlyTrend: state.data?.monthlyTrend || []
+    monthlyTrend: state.data?.monthlyTrend || [],
+    
+    // Session and metadata info
+    totalTransactions: state.data?.metadata?.totalTransactions || 0,
+    currentSessionId: state.data?.metadata?.currentSessionId || null
   };
 };

@@ -66,6 +66,7 @@ export interface DashboardData {
     month: number;
     year: number;
     totalTransactions: number;
+    currentSessionId?: string; // Current session ID for session-based data
     lastUpdated: string;
   };
 }
@@ -99,10 +100,15 @@ export interface PaginatedResponse<T> {
 export interface UploadResponse {
   totalParsed: number;
   totalSaved: number;
-  duplicatesSkipped: number;
+  duplicatesSkipped?: number; // Optional for backward compatibility
+  errorCount?: number; // New for session-based uploads
+  previousDataPreserved?: number; // Data preserved in database
   transactions: Transaction[];
-  isDuplicateOnly?: boolean;
-  shouldRedirectToDashboard?: boolean;
+  isDuplicateOnly?: boolean; // Deprecated for session-based uploads
+  shouldRedirectToDashboard?: boolean; // Deprecated for session-based uploads
+  isNewSession?: boolean; // New flag to indicate session-based upload
+  sessionId?: string; // Unique identifier for the upload session
+  sessionMessage?: string; // New message for session info
 }
 
 // Form types

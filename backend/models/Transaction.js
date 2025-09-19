@@ -70,6 +70,11 @@ const transactionSchema = new mongoose.Schema({
     type: String,
     enum: ['ai', 'manual', 'csv'],
     default: 'ai'
+  },
+  sessionId: {
+    type: String,
+    required: false, // Optional for backward compatibility
+    index: true // Index for better query performance
   }
 }, {
   timestamps: true, // Adds createdAt and updatedAt automatically
@@ -91,6 +96,7 @@ transactionSchema.virtual('direction').get(function() {
 // Index for better query performance
 transactionSchema.index({ date: -1, amount: 1 });
 transactionSchema.index({ category: 1 });
+transactionSchema.index({ sessionId: 1, date: -1 }); // Index for session-based queries
 
 // Pre-save middleware to clean up data
 transactionSchema.pre('save', function(next) {
