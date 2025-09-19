@@ -20,6 +20,7 @@ import {
   MoreVertical,
   Download
 } from 'lucide-react';
+import { TransactionRow } from './transactions/TransactionRow';
 import { financeApi, formatCurrency, handleApiError } from '../services/api';
 import { Transaction, TransactionFilters, TransactionCategory, TransactionFormData } from '../types';
 import { format } from 'date-fns';
@@ -350,49 +351,72 @@ export const Transactions: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      {/* Modern Header */}
-      <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-8 mb-6">
-        <div className="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-8">
-          <div className="flex items-center gap-6">
-            <div className="p-4 bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-600 rounded-2xl shadow-xl">
-              <CreditCard className="h-8 w-8 text-white" />
+      {/* Header Section */}
+      <div className="bg-white rounded-xl border border-gray-200 shadow-md p-6">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+          {/* Left: Title and Info */}
+          <div className="flex-1">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="p-2 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-lg shadow-sm">
+                <CreditCard className="h-5 w-5 text-white" />
+              </div>
+              <div>
+                <h1 className="text-xl sm:text-2xl font-semibold text-gray-900">
+                  Transaction Management
+                </h1>
+                <p className="text-gray-600 text-sm mt-1">
+                  Manage your financial transactions
+                </p>
+              </div>
             </div>
-            <div>
-              <h1 className="text-3xl xl:text-4xl font-bold text-gray-900 mb-2">
-                Transaction Management
-              </h1>
-              <p className="text-gray-600 text-lg mb-4">Manage your financial transactions with ease</p>
-              <div className="flex flex-wrap items-center gap-4">
-                <div className="flex items-center gap-2 bg-emerald-50 px-4 py-2 rounded-full border border-emerald-200">
-                  <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
-                  <span className="text-emerald-700 font-semibold text-sm">Live Data</span>
-                </div>
-                <div className="text-gray-600 text-sm">
-                  <span className="font-bold text-gray-900 text-lg">{totalCount}</span> transactions
-                </div>
+            
+            {/* Stats Row */}
+            <div className="flex flex-wrap items-center gap-4">
+              <div className="flex items-center gap-2 bg-emerald-50 px-3 py-1.5 rounded-lg border border-emerald-200">
+                <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
+                <span className="text-emerald-700 font-medium text-sm">Live Data</span>
+              </div>
+              <div className="flex items-center gap-1 text-gray-600">
+                <span className="text-lg font-semibold text-blue-600">{totalCount} </span>
+                <span className="text-sm"> transactions</span>
               </div>
             </div>
           </div>
           
-          {/* Action Buttons */}
-          <div className="flex flex-wrap items-center gap-3">
-            <button
-              onClick={fetchTransactions}
-              disabled={loading}
-              className="p-3 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-xl transition-all duration-200 shadow-sm hover:shadow-md group"
-              title="Refresh transactions"
-            >
-              <RefreshCw className={`h-5 w-5 text-gray-600 group-hover:text-blue-600 transition-all ${loading ? 'animate-spin' : ''}`} />
-            </button>
+          {/* Right: Action Buttons */}
+          <div className="flex flex-col sm:flex-row items-start gap-3">
+            <div className="flex items-center gap-2">
+              <button
+                onClick={fetchTransactions}
+                disabled={loading}
+                className="p-2.5 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-lg transition-all shadow-sm hover:shadow-md group"
+                title="Refresh transactions"
+              >
+                <RefreshCw className={`h-4 w-4 text-gray-600 group-hover:text-blue-600 transition-all ${loading ? 'animate-spin' : ''}`} />
+              </button>
+              
+              <button
+                onClick={() => setShowNewTransactionForm(true)}
+                className="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-all flex items-center gap-2 shadow-sm hover:shadow-md"
+              >
+                <Plus className="h-4 w-4" />
+                <span className="hidden sm:inline">Add Transaction</span>
+                <span className="sm:hidden">Add</span>
+              </button>
+            </div>
             
+            {/* Bulk Actions (when items are selected) */}
             {selectedTransactions.length > 0 && (
-              <div className="flex flex-wrap items-center gap-3">
+              <div className="flex flex-wrap items-center gap-2 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                <span className="text-xs font-medium text-blue-700">
+                  {selectedTransactions.length} selected
+                </span>
                 <button
                   onClick={handleBulkVerify}
-                  className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium rounded-xl transition-all flex items-center gap-2 shadow-md hover:shadow-lg"
+                  className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-medium rounded-md transition-all flex items-center gap-1"
                 >
-                  <CheckCircle className="h-4 w-4" />
-                  Verify ({selectedTransactions.length})
+                  <CheckCircle className="h-3 w-3" />
+                  Verify
                 </button>
                 
                 <div className="relative">
@@ -403,88 +427,85 @@ export const Transactions: React.FC = () => {
                         e.target.value = '';
                       }
                     }}
-                    className="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-xl appearance-none pr-10 shadow-md transition-all"
+                    className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded-md appearance-none pr-6 transition-all"
                     defaultValue=""
                   >
-                    <option value="" disabled>Change Category</option>
+                    <option value="" disabled>Category</option>
                     {categories.filter(cat => cat !== 'All').map(category => (
                       <option key={category} value={category} className="text-gray-900">
                         {category}
                       </option>
                     ))}
                   </select>
-                  <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-white" />
+                  <ChevronDown className="absolute right-1 top-1/2 transform -translate-y-1/2 h-3 w-3 text-white" />
                 </div>
                 
                 <button
                   onClick={handleBulkDelete}
-                  className="px-4 py-2.5 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded-xl transition-all flex items-center gap-2 shadow-md hover:shadow-lg"
+                  className="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white text-xs font-medium rounded-md transition-all flex items-center gap-1"
                 >
-                  <Trash2 className="h-4 w-4" />
-                  Delete ({selectedTransactions.length})
+                  <Trash2 className="h-3 w-3" />
+                  Delete
                 </button>
               </div>
             )}
-            
-            <button
-              onClick={() => setShowNewTransactionForm(true)}
-              className="px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold rounded-xl transition-all flex items-center gap-2 shadow-lg hover:shadow-xl"
-            >
-              <Plus className="h-4 w-4" />
-              Add Transaction
-            </button>
           </div>
         </div>
       </div>
 
-      {/* Search and Filters */}
-      <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-8">
+      {/* Search & Filter Section */}
+      <div className="bg-white rounded-xl border border-gray-200 shadow-md p-6">
         {/* Search Bar */}
-        <div className="relative mb-8">
-          <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-            <Search className="h-5 w-5 text-gray-400" />
+        <div className="mb-6">
+          <div className="relative">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <Search className="h-4 w-4 text-gray-400" />
+            </div>
+            <input
+              type="text"
+              placeholder="Search transactions by description, merchant, or category..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-10 pr-10 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:bg-white transition-all placeholder-gray-500 text-gray-900 text-sm"
+            />
+            {searchTerm && (
+              <button
+                onClick={() => setSearchTerm('')}
+                className="absolute inset-y-0 right-0 pr-3 flex items-center"
+              >
+                <XCircle className="h-4 w-4 text-gray-400 hover:text-red-500 transition-colors" />
+              </button>
+            )}
           </div>
-          <input
-            type="text"
-            placeholder="Search transactions by description, merchant, or category..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-12 pr-12 py-4 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:bg-white transition-all placeholder-gray-500 text-gray-900"
-          />
-          {searchTerm && (
-            <button
-              onClick={() => setSearchTerm('')}
-              className="absolute inset-y-0 right-0 pr-4 flex items-center"
-            >
-              <XCircle className="h-5 w-5 text-gray-400 hover:text-red-500 transition-colors" />
-            </button>
-          )}
         </div>
 
-        {/* Stats and Filter Toggle */}
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
-          <div className="flex flex-wrap items-center gap-6">
-            <div className="flex items-center gap-3 bg-blue-50 px-4 py-2 rounded-xl border border-blue-100">
+        {/* Stats and Filter Section */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          {/* Stats Pills */}
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="flex items-center gap-2 bg-blue-50 px-3 py-1.5 rounded-lg border border-blue-200">
               <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-              <span className="text-blue-700 font-semibold text-sm">
+              <span className="text-blue-700 font-medium text-sm">
                 {totalCount} Total
               </span>
             </div>
+            
             {selectedTransactions.length > 0 && (
-              <div className="flex items-center gap-3 bg-emerald-50 px-4 py-2 rounded-xl border border-emerald-100">
+              <div className="flex items-center gap-2 bg-emerald-50 px-3 py-1.5 rounded-lg border border-emerald-200">
                 <div className="w-2 h-2 bg-emerald-500 rounded-full"></div>
-                <span className="text-emerald-700 font-semibold text-sm">
+                <span className="text-emerald-700 font-medium text-sm">
                   {selectedTransactions.length} Selected
                 </span>
               </div>
             )}
           </div>
           
+          {/* Filter Button */}
           <button
             onClick={() => setShowFilters(!showFilters)}
-            className={`px-6 py-3 rounded-xl flex items-center gap-3 font-medium transition-all ${
+            className={`px-4 py-2 rounded-lg flex items-center gap-2 font-medium text-sm transition-all ${
               showFilters
-                ? 'bg-blue-600 text-white shadow-lg'
+                ? 'bg-blue-600 text-white shadow-md'
                 : 'bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-200'
             }`}
           >
@@ -665,138 +686,44 @@ export const Transactions: React.FC = () => {
             </div>
           )}
 
-          {/* Modern Transaction Cards */}
-          <div className="space-y-6">
-            {/* Selection Header */}
-            {transactions.length > 0 && (
-              <div className="flex items-center justify-between p-6 bg-gray-50 rounded-xl border border-gray-200">
-                <div className="flex items-center gap-4">
-                  <input
-                    type="checkbox"
-                    checked={selectedTransactions.length === transactions.length}
-                    onChange={selectAllTransactions}
-                    className="h-5 w-5 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                  />
-                  <span className="text-gray-700 font-medium">
-                    {selectedTransactions.length === 0 
-                      ? `Select from ${transactions.length} transactions`
-                      : `${selectedTransactions.length} of ${transactions.length} selected`
-                    }
-                  </span>
-                </div>
-                {selectedTransactions.length > 0 && (
-                  <span className="text-sm text-gray-500">
-                    Use bulk actions above to manage selected transactions
-                  </span>
-                )}
-              </div>
-            )}
-
-            {/* Transaction Cards Grid */}
-            <div className="grid gap-4">
-              {transactions.map((transaction) => (
-                <div 
-                  key={transaction._id} 
-                  className={`bg-white border-2 rounded-2xl p-6 transition-all duration-200 hover:shadow-lg ${
-                    selectedTransactions.includes(transaction._id)
-                      ? 'border-blue-300 bg-blue-50'
-                      : 'border-gray-100 hover:border-gray-200'
-                  }`}
-                >
-                  <div className="flex items-center justify-between">
-                    {/* Left side - Checkbox, Icon, Details */}
-                    <div className="flex items-center gap-4 flex-1 min-w-0">
+          {/* Responsive Transactions Table */}
+          <div className="bg-white rounded-xl border border-gray-200 shadow-md p-3 sm:p-4 transition-shadow duration-200 mt-4 sm:mt-6 lg:mt-8">
+            <div className="overflow-x-auto rounded-lg">
+              <table className="min-w-[700px] md:min-w-[920px] w-full text-xs md:text-sm border-separate border-spacing-y-2 sm:border-spacing-y-3">
+                <thead>
+                  <tr className="bg-gray-50 text-gray-600">
+                    <th className="w-10 px-4 py-3 text-left">
                       <input
                         type="checkbox"
-                        checked={selectedTransactions.includes(transaction._id)}
-                        onChange={() => toggleTransactionSelection(transaction._id)}
-                        className="h-5 w-5 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                        checked={transactions.length > 0 && selectedTransactions.length === transactions.length}
+                        onChange={selectAllTransactions}
+                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                        aria-label="Select all transactions"
                       />
-                      
-                      <div className={`w-14 h-14 rounded-2xl flex items-center justify-center flex-shrink-0 ${
-                        transaction.amount >= 0 
-                          ? 'bg-emerald-100 text-emerald-600' 
-                          : 'bg-red-100 text-red-600'
-                      }`}>
-                        {transaction.amount >= 0 ? (
-                          <TrendingUp className="w-7 h-7" />
-                        ) : (
-                          <TrendingDown className="w-7 h-7" />
-                        )}
-                      </div>
-                      
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-3 mb-2">
-                          <h3 className="text-lg font-bold text-gray-900 truncate">
-                            {transaction.description}
-                          </h3>
-                          
-                          {!transaction.isVerified && (
-                            <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-700 border border-amber-200">
-                              <AlertCircle className="w-3 h-3 mr-1" />
-                              AI Parsed
-                            </span>
-                          )}
-                        </div>
-                        
-                        <div className="flex flex-wrap items-center gap-4 text-sm">
-                          <div className="flex items-center gap-2 text-gray-600">
-                            <Calendar className="w-4 h-4" />
-                            <span className="font-medium">
-                              {format(new Date(transaction.date), 'MMM dd, yyyy')}
-                            </span>
-                          </div>
-                          
-                          <span className={`inline-flex items-center px-3 py-1.5 rounded-lg text-xs font-semibold ${getCategoryColor(transaction.category)} shadow-sm`}>
-                            <Tag className="w-3 h-3 mr-1.5" />
-                            {transaction.category}
-                          </span>
-                          
-                          {transaction.merchant && (
-                            <div className="flex items-center gap-2 text-gray-600">
-                              <Building2 className="w-4 h-4" />
-                              <span className="font-medium truncate">{transaction.merchant}</span>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                    
-                    {/* Right side - Amount and Actions */}
-                    <div className="flex items-center gap-6">
-                      <div className="text-right">
-                        <div className={`text-2xl font-bold ${
-                          transaction.amount >= 0 ? 'text-emerald-600' : 'text-red-600'
-                        }`}>
-                          {formatCurrency(transaction.amount)}
-                        </div>
-                        <div className={`text-sm font-semibold ${
-                          transaction.amount >= 0 ? 'text-emerald-500' : 'text-red-500'
-                        }`}>
-                          {transaction.amount >= 0 ? 'Income' : 'Expense'}
-                        </div>
-                      </div>
-                      
-                      <div className="flex items-center gap-2">
-                        <button 
-                          onClick={() => handleEditTransaction(transaction)}
-                          className="p-3 text-gray-400 hover:text-blue-600 hover:bg-blue-100 rounded-xl transition-all"
-                          title="Edit transaction"
-                        >
-                          <Edit3 className="h-5 w-5" />
-                        </button>
-                        <button 
-                          onClick={() => handleDeleteTransaction(transaction._id)}
-                          className="p-3 text-gray-400 hover:text-red-600 hover:bg-red-100 rounded-xl transition-all"
-                          title="Delete transaction"
-                        >
-                          <Trash2 className="h-5 w-5" />
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ))}
+                    </th>
+                    <th className="px-4 py-3 text-left font-medium text-xs md:text-sm">Description</th>
+                    <th className="px-4 py-3 text-left font-medium text-xs md:text-sm">Category</th>
+                    <th className="px-4 py-3 text-left font-medium text-xs md:text-sm">Date</th>
+                    <th className="px-4 py-3 text-left font-medium text-xs md:text-sm hidden md:table-cell">Merchant</th>
+                    <th className="px-4 py-3 text-right font-medium text-xs md:text-sm">Amount</th>
+                    <th className="px-4 py-3 text-center font-medium text-xs md:text-sm hidden md:table-cell">Type</th>
+                    <th className="px-4 py-3 text-center font-medium text-xs md:text-sm">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {transactions.map((t) => (
+                    <TransactionRow
+                      key={t._id}
+                      transaction={t}
+                      isSelected={selectedTransactions.includes(t._id)}
+                      onToggle={toggleTransactionSelection}
+                      onEdit={handleEditTransaction}
+                      onDelete={handleDeleteTransaction}
+                      getCategoryColor={getCategoryColor}
+                    />
+                  ))}
+                </tbody>
+              </table>
             </div>
           </div>
         </div>
