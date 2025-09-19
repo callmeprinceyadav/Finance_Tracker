@@ -350,161 +350,148 @@ export const Transactions: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      {/* Enhanced Header */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
-          <div className="flex items-center gap-4">
-            <div className="p-4 bg-gradient-to-br from-blue-500 via-purple-500 to-blue-600 rounded-2xl text-white shadow-lg">
-              <CreditCard className="h-7 w-7" />
+      {/* Modern Header */}
+      <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-8 mb-6">
+        <div className="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-8">
+          <div className="flex items-center gap-6">
+            <div className="p-4 bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-600 rounded-2xl shadow-xl">
+              <CreditCard className="h-8 w-8 text-white" />
             </div>
             <div>
-              <h2 className="text-3xl font-bold text-gray-900 flex items-center gap-2">
-                💳 Transaction Management
-              </h2>
-              <p className="text-gray-600 mt-1 text-lg">Review, edit, and manage your financial transactions</p>
-              <div className="flex items-center gap-6 mt-3 text-sm">
-                <span className="flex items-center gap-2 bg-green-50 px-3 py-1 rounded-full">
-                  <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                  <span className="text-green-700 font-medium">Live Session Data</span>
-                </span>
-                <span className="flex items-center gap-2 text-gray-600">
-                  <span className="font-semibold text-gray-900">{totalCount}</span>
-                  <span>transactions loaded</span>
-                </span>
+              <h1 className="text-3xl xl:text-4xl font-bold text-gray-900 mb-2">
+                Transaction Management
+              </h1>
+              <p className="text-gray-600 text-lg mb-4">Manage your financial transactions with ease</p>
+              <div className="flex flex-wrap items-center gap-4">
+                <div className="flex items-center gap-2 bg-emerald-50 px-4 py-2 rounded-full border border-emerald-200">
+                  <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
+                  <span className="text-emerald-700 font-semibold text-sm">Live Data</span>
+                </div>
+                <div className="text-gray-600 text-sm">
+                  <span className="font-bold text-gray-900 text-lg">{totalCount}</span> transactions
+                </div>
               </div>
             </div>
           </div>
           
-          <div className="flex items-center gap-3">
+          {/* Action Buttons */}
+          <div className="flex flex-wrap items-center gap-3">
             <button
               onClick={fetchTransactions}
               disabled={loading}
-              className="p-3 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all duration-200 shadow-sm hover:shadow-md group"
+              className="p-3 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-xl transition-all duration-200 shadow-sm hover:shadow-md group"
               title="Refresh transactions"
             >
-              <RefreshCw className={`h-5 w-5 transition-transform ${loading ? 'animate-spin' : 'group-hover:rotate-45'}`} />
+              <RefreshCw className={`h-5 w-5 text-gray-600 group-hover:text-blue-600 transition-all ${loading ? 'animate-spin' : ''}`} />
             </button>
             
             {selectedTransactions.length > 0 && (
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-3">
                 <button
                   onClick={handleBulkVerify}
-                  className="px-5 py-3 bg-gradient-to-r from-emerald-500 to-green-600 text-white text-sm font-medium rounded-xl hover:from-emerald-600 hover:to-green-700 transition-all flex items-center gap-2 shadow-md hover:shadow-lg"
+                  className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium rounded-xl transition-all flex items-center gap-2 shadow-md hover:shadow-lg"
                 >
                   <CheckCircle className="h-4 w-4" />
-                  ✓ Verify ({selectedTransactions.length})
+                  Verify ({selectedTransactions.length})
                 </button>
                 
-                {/* Bulk Category Update */}
                 <div className="relative">
                   <select
                     onChange={(e) => {
                       if (e.target.value) {
                         handleBulkCategoryUpdate(e.target.value as TransactionCategory);
-                        e.target.value = ''; // Reset selection
+                        e.target.value = '';
                       }
                     }}
-                    className="px-5 py-3 bg-gradient-to-r from-blue-500 to-indigo-600 text-white text-sm font-medium rounded-xl hover:from-blue-600 hover:to-indigo-700 transition-all appearance-none pr-10 shadow-md"
+                    className="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-xl appearance-none pr-10 shadow-md transition-all"
                     defaultValue=""
                   >
-                    <option value="" disabled>🏷️ Category</option>
+                    <option value="" disabled>Change Category</option>
                     {categories.filter(cat => cat !== 'All').map(category => (
                       <option key={category} value={category} className="text-gray-900">
                         {category}
                       </option>
                     ))}
                   </select>
-                  <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-white pointer-events-none" />
+                  <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-white" />
                 </div>
                 
                 <button
                   onClick={handleBulkDelete}
-                  className="px-5 py-3 bg-gradient-to-r from-red-500 to-red-600 text-white text-sm font-medium rounded-xl hover:from-red-600 hover:to-red-700 transition-all flex items-center gap-2 shadow-md hover:shadow-lg"
+                  className="px-4 py-2.5 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded-xl transition-all flex items-center gap-2 shadow-md hover:shadow-lg"
                 >
                   <Trash2 className="h-4 w-4" />
-                  🗑️ Delete ({selectedTransactions.length})
+                  Delete ({selectedTransactions.length})
                 </button>
               </div>
             )}
             
             <button
               onClick={() => setShowNewTransactionForm(true)}
-              className="px-6 py-3 bg-gradient-to-r from-purple-500 via-blue-500 to-indigo-600 text-white text-sm font-semibold rounded-xl hover:from-purple-600 hover:via-blue-600 hover:to-indigo-700 transition-all flex items-center gap-2 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+              className="px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold rounded-xl transition-all flex items-center gap-2 shadow-lg hover:shadow-xl"
             >
               <Plus className="h-4 w-4" />
-              ✨ Add Transaction
+              Add Transaction
             </button>
           </div>
         </div>
       </div>
 
-      {/* Enhanced Search and Filters */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-        <div className="space-y-6">
-          {/* Enhanced Search Bar with Better Icons and Design */}
-          <div className="relative">
-            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-              <div className="flex items-center gap-2">
-                <Search className="h-5 w-5 text-blue-500" />
-                <div className="h-4 w-px bg-gray-300"></div>
-              </div>
+      {/* Search and Filters */}
+      <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-8">
+        {/* Search Bar */}
+        <div className="relative mb-8">
+          <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+            <Search className="h-5 w-5 text-gray-400" />
+          </div>
+          <input
+            type="text"
+            placeholder="Search transactions by description, merchant, or category..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full pl-12 pr-12 py-4 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:bg-white transition-all placeholder-gray-500 text-gray-900"
+          />
+          {searchTerm && (
+            <button
+              onClick={() => setSearchTerm('')}
+              className="absolute inset-y-0 right-0 pr-4 flex items-center"
+            >
+              <XCircle className="h-5 w-5 text-gray-400 hover:text-red-500 transition-colors" />
+            </button>
+          )}
+        </div>
+
+        {/* Stats and Filter Toggle */}
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+          <div className="flex flex-wrap items-center gap-6">
+            <div className="flex items-center gap-3 bg-blue-50 px-4 py-2 rounded-xl border border-blue-100">
+              <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+              <span className="text-blue-700 font-semibold text-sm">
+                {totalCount} Total
+              </span>
             </div>
-            <input
-              type="text"
-              placeholder="🔍 Search transactions by description, merchant, or category..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-16 pr-12 py-4 bg-white border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-sm placeholder-gray-500 shadow-sm hover:shadow-md"
-            />
-            {searchTerm ? (
-              <button
-                onClick={() => setSearchTerm('')}
-                className="absolute inset-y-0 right-0 pr-4 flex items-center group"
-              >
-                <XCircle className="h-5 w-5 text-gray-400 hover:text-red-500 transition-colors group-hover:scale-110" />
-              </button>
-            ) : (
-              <div className="absolute inset-y-0 right-0 pr-4 flex items-center">
-                <div className="flex items-center gap-1 text-xs text-gray-400">
-                  <span>Press</span>
-                  <kbd className="px-2 py-0.5 text-xs text-gray-500 bg-gray-100 rounded border">⌘K</kbd>
-                </div>
+            {selectedTransactions.length > 0 && (
+              <div className="flex items-center gap-3 bg-emerald-50 px-4 py-2 rounded-xl border border-emerald-100">
+                <div className="w-2 h-2 bg-emerald-500 rounded-full"></div>
+                <span className="text-emerald-700 font-semibold text-sm">
+                  {selectedTransactions.length} Selected
+                </span>
               </div>
             )}
           </div>
-
-          {/* Stats and Filter Toggle */}
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div className="flex items-center gap-6 text-sm">
-              <div className="flex items-center gap-2">
-                <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                <span className="text-gray-600">
-                  <span className="font-semibold text-gray-900">{totalCount}</span> transactions found
-                </span>
-              </div>
-              {selectedTransactions.length > 0 && (
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 bg-emerald-500 rounded-full"></div>
-                  <span className="text-gray-600">
-                    <span className="font-semibold text-gray-900">{selectedTransactions.length}</span> selected
-                  </span>
-                </div>
-              )}
-            </div>
-            
-            <button
-              onClick={() => setShowFilters(!showFilters)}
-              className={`px-4 py-2.5 rounded-lg flex items-center gap-2 transition-all ${
-                showFilters
-                  ? 'bg-blue-100 text-blue-700 border border-blue-200'
-                  : 'bg-gray-100 text-gray-700 border border-gray-200 hover:bg-gray-200'
-              }`}
-            >
-              <Filter className="h-4 w-4" />
-              <span className="font-medium">Advanced Filters</span>
-              <ChevronDown className={`h-4 w-4 transform transition-transform ${showFilters ? 'rotate-180' : ''}`} />
-            </button>
-          </div>
+          
+          <button
+            onClick={() => setShowFilters(!showFilters)}
+            className={`px-6 py-3 rounded-xl flex items-center gap-3 font-medium transition-all ${
+              showFilters
+                ? 'bg-blue-600 text-white shadow-lg'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-200'
+            }`}
+          >
+            <Filter className="h-4 w-4" />
+            <span>Filters</span>
+            <ChevronDown className={`h-4 w-4 transform transition-transform ${showFilters ? 'rotate-180' : ''}`} />
+          </button>
         </div>
 
         {/* Enhanced Filters Panel */}
@@ -678,116 +665,132 @@ export const Transactions: React.FC = () => {
             </div>
           )}
 
-          {/* Clean Transaction Table */}
-          <div className="bg-white rounded-lg shadow overflow-hidden">
-            {/* Table Header */}
-            <div className="bg-gray-50 px-6 py-3 border-b border-gray-200">
-              <div className="flex items-center">
-                <input
-                  type="checkbox"
-                  checked={selectedTransactions.length === transactions.length && transactions.length > 0}
-                  onChange={selectAllTransactions}
-                  className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
-                />
-                <span className="ml-3 text-sm font-medium text-gray-700">
-                  Select All ({transactions.length})
-                </span>
+          {/* Modern Transaction Cards */}
+          <div className="space-y-6">
+            {/* Selection Header */}
+            {transactions.length > 0 && (
+              <div className="flex items-center justify-between p-6 bg-gray-50 rounded-xl border border-gray-200">
+                <div className="flex items-center gap-4">
+                  <input
+                    type="checkbox"
+                    checked={selectedTransactions.length === transactions.length}
+                    onChange={selectAllTransactions}
+                    className="h-5 w-5 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                  />
+                  <span className="text-gray-700 font-medium">
+                    {selectedTransactions.length === 0 
+                      ? `Select from ${transactions.length} transactions`
+                      : `${selectedTransactions.length} of ${transactions.length} selected`
+                    }
+                  </span>
+                </div>
+                {selectedTransactions.length > 0 && (
+                  <span className="text-sm text-gray-500">
+                    Use bulk actions above to manage selected transactions
+                  </span>
+                )}
               </div>
-            </div>
+            )}
 
-            {/* Transactions */}
-            <div className="divide-y divide-gray-200">
+            {/* Transaction Cards Grid */}
+            <div className="grid gap-4">
               {transactions.map((transaction) => (
-                <div key={transaction._id} className="px-6 py-5 hover:bg-gray-50 transition-all duration-150">
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-start gap-4 flex-1 min-w-0">
-                      {/* Checkbox with better alignment */}
-                      <div className="flex items-center pt-1">
-                        <input
-                          type="checkbox"
-                          checked={selectedTransactions.includes(transaction._id)}
-                          onChange={() => toggleTransactionSelection(transaction._id)}
-                          className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded shadow-sm"
-                        />
-                      </div>
+                <div 
+                  key={transaction._id} 
+                  className={`bg-white border-2 rounded-2xl p-6 transition-all duration-200 hover:shadow-lg ${
+                    selectedTransactions.includes(transaction._id)
+                      ? 'border-blue-300 bg-blue-50'
+                      : 'border-gray-100 hover:border-gray-200'
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    {/* Left side - Checkbox, Icon, Details */}
+                    <div className="flex items-center gap-4 flex-1 min-w-0">
+                      <input
+                        type="checkbox"
+                        checked={selectedTransactions.includes(transaction._id)}
+                        onChange={() => toggleTransactionSelection(transaction._id)}
+                        className="h-5 w-5 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                      />
                       
-                      {/* Transaction Icon */}
-                      <div className={`flex-shrink-0 w-12 h-12 rounded-xl flex items-center justify-center ${
-                        transaction.amount >= 0 ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'
+                      <div className={`w-14 h-14 rounded-2xl flex items-center justify-center flex-shrink-0 ${
+                        transaction.amount >= 0 
+                          ? 'bg-emerald-100 text-emerald-600' 
+                          : 'bg-red-100 text-red-600'
                       }`}>
                         {transaction.amount >= 0 ? (
-                          <TrendingUp className="w-6 h-6" />
+                          <TrendingUp className="w-7 h-7" />
                         ) : (
-                          <TrendingDown className="w-6 h-6" />
+                          <TrendingDown className="w-7 h-7" />
                         )}
                       </div>
                       
-                      {/* Transaction Details */}
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-3 mb-2">
-                          <h3 className="text-base font-semibold text-gray-900 truncate">
+                          <h3 className="text-lg font-bold text-gray-900 truncate">
                             {transaction.description}
                           </h3>
                           
                           {!transaction.isVerified && (
-                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800 border border-amber-200">
+                            <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-700 border border-amber-200">
                               <AlertCircle className="w-3 h-3 mr-1" />
                               AI Parsed
                             </span>
                           )}
                         </div>
                         
-                        <div className="flex items-center gap-4 text-sm text-gray-600">
-                          <span className="flex items-center gap-1.5">
-                            <Calendar className="w-4 h-4 text-gray-400" />
-                            <span className="font-medium">{format(new Date(transaction.date), 'MMM dd, yyyy')}</span>
-                          </span>
+                        <div className="flex flex-wrap items-center gap-4 text-sm">
+                          <div className="flex items-center gap-2 text-gray-600">
+                            <Calendar className="w-4 h-4" />
+                            <span className="font-medium">
+                              {format(new Date(transaction.date), 'MMM dd, yyyy')}
+                            </span>
+                          </div>
                           
-                          <span className={`inline-flex items-center px-3 py-1 rounded-lg text-xs font-medium ${getCategoryColor(transaction.category)} shadow-sm`}>
+                          <span className={`inline-flex items-center px-3 py-1.5 rounded-lg text-xs font-semibold ${getCategoryColor(transaction.category)} shadow-sm`}>
                             <Tag className="w-3 h-3 mr-1.5" />
                             {transaction.category}
                           </span>
                           
                           {transaction.merchant && (
-                            <span className="flex items-center gap-1.5 truncate">
-                              <Building2 className="w-4 h-4 text-gray-400" />
-                              <span className="font-medium">{transaction.merchant}</span>
-                            </span>
+                            <div className="flex items-center gap-2 text-gray-600">
+                              <Building2 className="w-4 h-4" />
+                              <span className="font-medium truncate">{transaction.merchant}</span>
+                            </div>
                           )}
                         </div>
                       </div>
                     </div>
                     
-                    {/* Amount and Actions */}
+                    {/* Right side - Amount and Actions */}
                     <div className="flex items-center gap-6">
                       <div className="text-right">
-                        <div className={`text-xl font-bold ${
-                          transaction.amount >= 0 ? 'text-green-600' : 'text-red-600'
+                        <div className={`text-2xl font-bold ${
+                          transaction.amount >= 0 ? 'text-emerald-600' : 'text-red-600'
                         }`}>
                           {formatCurrency(transaction.amount)}
                         </div>
-                        <div className={`text-xs font-medium uppercase tracking-wide ${
-                          transaction.amount >= 0 ? 'text-green-500' : 'text-red-500'
+                        <div className={`text-sm font-semibold ${
+                          transaction.amount >= 0 ? 'text-emerald-500' : 'text-red-500'
                         }`}>
-                          {transaction.amount >= 0 ? '💰 Income' : '💸 Expense'}
+                          {transaction.amount >= 0 ? 'Income' : 'Expense'}
                         </div>
                       </div>
                       
-                      {/* Action Buttons */}
-                      <div className="flex items-center gap-1">
+                      <div className="flex items-center gap-2">
                         <button 
                           onClick={() => handleEditTransaction(transaction)}
-                          className="p-2.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-200 group"
+                          className="p-3 text-gray-400 hover:text-blue-600 hover:bg-blue-100 rounded-xl transition-all"
                           title="Edit transaction"
                         >
-                          <Edit3 className="h-4 w-4 group-hover:scale-110 transition-transform" />
+                          <Edit3 className="h-5 w-5" />
                         </button>
                         <button 
                           onClick={() => handleDeleteTransaction(transaction._id)}
-                          className="p-2.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all duration-200 group"
+                          className="p-3 text-gray-400 hover:text-red-600 hover:bg-red-100 rounded-xl transition-all"
                           title="Delete transaction"
                         >
-                          <Trash2 className="h-4 w-4 group-hover:scale-110 transition-transform" />
+                          <Trash2 className="h-5 w-5" />
                         </button>
                       </div>
                     </div>
