@@ -11,6 +11,8 @@ interface TransactionRowProps {
   onEdit: (t: Transaction) => void;
   onDelete: (id: string) => void;
   getCategoryColor: (category: string) => string;
+  onSelectForEdit: (id: string) => void;
+  onSelectForDelete: (id: string) => void;
 }
 
 export const TransactionRow: React.FC<TransactionRowProps> = ({
@@ -19,7 +21,9 @@ export const TransactionRow: React.FC<TransactionRowProps> = ({
   onToggle,
   onEdit,
   onDelete,
-  getCategoryColor
+  getCategoryColor,
+  onSelectForEdit,
+  onSelectForDelete
 }) => {
   return (
     <tr className={`${isSelected ? 'bg-blue-50' : 'bg-white'} hover:bg-gray-50 transition-colors duration-150 rounded-lg shadow-sm hover:shadow-md`}>
@@ -72,16 +76,16 @@ export const TransactionRow: React.FC<TransactionRowProps> = ({
       <td className="px-4 sm:px-5 py-3 sm:py-3.5 align-middle">
         <div className="flex items-center justify-center gap-1.5 transition-all duration-150">
           <button
-            onClick={() => onEdit(t)}
+            onClick={() => onSelectForEdit(t._id)}
             className="p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-colors duration-150"
-            title="Edit"
+            title="Select for editing"
           >
             <Edit3 className="w-4 h-4" />
           </button>
           <button
-            onClick={() => onDelete(t._id)}
+            onClick={() => onSelectForDelete(t._id)}
             className="p-1.5 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors duration-150"
-            title="Delete"
+            title="Select for deletion"
           >
             <Trash2 className="w-4 h-4" />
           </button>

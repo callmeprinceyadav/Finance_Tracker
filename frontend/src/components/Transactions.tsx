@@ -253,6 +253,22 @@ export const Transactions: React.FC = () => {
     }
   };
 
+  // Handle selecting transaction for editing
+  const handleSelectForEdit = (transactionId: string) => {
+    setSelectedTransactions([transactionId]);
+    setTimeout(() => {
+      window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+    }, 100);
+  };
+
+  // Handle selecting transaction for deletion  
+  const handleSelectForDelete = (transactionId: string) => {
+    setSelectedTransactions([transactionId]);
+    setTimeout(() => {
+      window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+    }, 100);
+  };
+
   const getCategoryColor = (category: string): string => {
     const colorMap: { [key: string]: string } = {
       'Food & Dining': 'bg-red-100 text-red-800',
@@ -350,7 +366,7 @@ export const Transactions: React.FC = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 pb-32 lg:pb-28">
       {/* Header Section */}
       <div className="bg-white rounded-xl border border-gray-200 shadow-md p-6">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
@@ -394,61 +410,7 @@ export const Transactions: React.FC = () => {
               >
                 <RefreshCw className={`h-4 w-4 text-gray-600 group-hover:text-blue-600 transition-all ${loading ? 'animate-spin' : ''}`} />
               </button>
-              
-              <button
-                onClick={() => setShowNewTransactionForm(true)}
-                className="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-all flex items-center gap-2 shadow-sm hover:shadow-md"
-              >
-                <Plus className="h-4 w-4" />
-                <span className="hidden sm:inline">Add Transaction</span>
-                <span className="sm:hidden">Add</span>
-              </button>
             </div>
-            
-            {/* Bulk Actions (when items are selected) */}
-            {selectedTransactions.length > 0 && (
-              <div className="flex flex-wrap items-center gap-2 p-3 bg-blue-50 rounded-lg border border-blue-200">
-                <span className="text-xs font-medium text-blue-700">
-                  {selectedTransactions.length} selected
-                </span>
-                <button
-                  onClick={handleBulkVerify}
-                  className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-medium rounded-md transition-all flex items-center gap-1"
-                >
-                  <CheckCircle className="h-3 w-3" />
-                  Verify
-                </button>
-                
-                <div className="relative">
-                  <select
-                    onChange={(e) => {
-                      if (e.target.value) {
-                        handleBulkCategoryUpdate(e.target.value as TransactionCategory);
-                        e.target.value = '';
-                      }
-                    }}
-                    className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded-md appearance-none pr-6 transition-all"
-                    defaultValue=""
-                  >
-                    <option value="" disabled>Category</option>
-                    {categories.filter(cat => cat !== 'All').map(category => (
-                      <option key={category} value={category} className="text-gray-900">
-                        {category}
-                      </option>
-                    ))}
-                  </select>
-                  <ChevronDown className="absolute right-1 top-1/2 transform -translate-y-1/2 h-3 w-3 text-white" />
-                </div>
-                
-                <button
-                  onClick={handleBulkDelete}
-                  className="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white text-xs font-medium rounded-md transition-all flex items-center gap-1"
-                >
-                  <Trash2 className="h-3 w-3" />
-                  Delete
-                </button>
-              </div>
-            )}
           </div>
         </div>
       </div>
@@ -679,7 +641,7 @@ export const Transactions: React.FC = () => {
                 </div>
                 {selectedTransactions.length > 0 && (
                   <div className="text-xs text-gray-500">
-                    Use bulk actions above to edit selected transactions
+                    {selectedTransactions.length} selected
                   </div>
                 )}
               </div>
@@ -720,6 +682,8 @@ export const Transactions: React.FC = () => {
                       onEdit={handleEditTransaction}
                       onDelete={handleDeleteTransaction}
                       getCategoryColor={getCategoryColor}
+                      onSelectForEdit={handleSelectForEdit}
+                      onSelectForDelete={handleSelectForDelete}
                     />
                   ))}
                 </tbody>
@@ -751,6 +715,144 @@ export const Transactions: React.FC = () => {
             setTransactionToDelete(null);
           }}
         />
+      )}
+      
+      {/* New Transaction Modal */}
+      {showNewTransactionForm && (
+        <NewTransactionModal
+          onSave={handleCreateTransaction}
+          onClose={() => setShowNewTransactionForm(false)}
+          categories={categories.filter(cat => cat !== 'All') as TransactionCategory[]}
+        />
+      )}
+      
+      {/* Advanced External CRUD Control Panel */}
+      {transactions.length > 0 && (
+        <div className="fixed bottom-0 left-0 right-0 z-50">
+          {/* Backdrop blur effect */}
+          <div className="absolute inset-0 bg-white/95 backdrop-blur-sm border-t border-gray-200/80 shadow-2xl"></div>
+          
+          {/* Main control panel */}
+          <div className="relative">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-5">
+              <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 lg:gap-6">
+                
+                {/* Selection Info */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-3">
+                    <div className={`flex items-center justify-center w-10 h-10 rounded-full transition-all duration-300 ${
+                      selectedTransactions.length > 0
+                        ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg'
+                        : 'bg-gray-100 text-gray-400'
+                    }`}>
+                      <span className="text-sm font-bold">{selectedTransactions.length}</span>
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-gray-900 leading-tight">
+                        {selectedTransactions.length === 0 
+                          ? "No transactions selected" 
+                          : selectedTransactions.length === 1
+                          ? "1 transaction selected"
+                          : `${selectedTransactions.length} transactions selected`}
+                      </p>
+                      <p className="text-xs text-gray-500 mt-0.5">
+                        {selectedTransactions.length === 0
+                          ? "Select transactions to perform actions"
+                          : "Use the buttons below to edit, delete, or create transactions"}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Action Buttons */}
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full lg:w-auto">
+                  
+                  {/* Edit Button */}
+                  <button
+                    onClick={() => {
+                      if (selectedTransactions.length === 1) {
+                        const selectedTransaction = transactions.find(t => t._id === selectedTransactions[0]);
+                        if (selectedTransaction) handleEditTransaction(selectedTransaction);
+                      } else {
+                        alert('Please select exactly one transaction to edit');
+                      }
+                    }}
+                    disabled={selectedTransactions.length !== 1}
+                    className={`group relative px-6 py-3 rounded-xl font-semibold text-sm transition-all duration-300 transform hover:scale-105 ${
+                      selectedTransactions.length === 1
+                        ? 'bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white shadow-lg hover:shadow-xl'
+                        : 'bg-gray-100 text-gray-400 cursor-not-allowed shadow-inner'
+                    }`}
+                  >
+                    <div className="flex items-center justify-center gap-2.5">
+                      <Edit3 className={`h-4 w-4 transition-transform duration-300 ${
+                        selectedTransactions.length === 1 ? 'group-hover:rotate-12' : ''
+                      }`} />
+                      <span className="hidden sm:inline">Edit Selected</span>
+                      <span className="sm:hidden">Edit</span>
+                    </div>
+                    {selectedTransactions.length === 1 && (
+                      <div className="absolute inset-0 bg-white/20 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                    )}
+                  </button>
+                  
+                  {/* Delete Button */}
+                  <button
+                    onClick={() => {
+                      if (selectedTransactions.length >= 1) {
+                        if (window.confirm(`Are you sure you want to delete ${selectedTransactions.length} selected transaction${selectedTransactions.length === 1 ? '' : 's'}? This action cannot be undone.`)) {
+                          handleBulkDelete();
+                        }
+                      } else {
+                        alert('Please select at least one transaction to delete');
+                      }
+                    }}
+                    disabled={selectedTransactions.length === 0}
+                    className={`group relative px-6 py-3 rounded-xl font-semibold text-sm transition-all duration-300 transform hover:scale-105 ${
+                      selectedTransactions.length >= 1
+                        ? 'bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white shadow-lg hover:shadow-xl'
+                        : 'bg-gray-100 text-gray-400 cursor-not-allowed shadow-inner'
+                    }`}
+                  >
+                    <div className="flex items-center justify-center gap-2.5">
+                      <Trash2 className={`h-4 w-4 transition-transform duration-300 ${
+                        selectedTransactions.length >= 1 ? 'group-hover:rotate-12' : ''
+                      }`} />
+                      <span className="hidden sm:inline">
+                        Delete {selectedTransactions.length > 1 ? `(${selectedTransactions.length})` : 'Selected'}
+                      </span>
+                      <span className="sm:hidden">Delete</span>
+                    </div>
+                    {selectedTransactions.length >= 1 && (
+                      <div className="absolute inset-0 bg-white/20 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                    )}
+                  </button>
+                  
+                  {/* Add New Button */}
+                  <button
+                    onClick={() => setShowNewTransactionForm(true)}
+                    className="group relative px-6 py-3 bg-gradient-to-r from-emerald-600 to-green-700 hover:from-emerald-700 hover:to-green-800 text-white font-semibold rounded-xl transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl"
+                  >
+                    <div className="flex items-center justify-center gap-2.5">
+                      <Plus className="h-4 w-4 transition-transform duration-300 group-hover:rotate-180" />
+                      <span className="hidden sm:inline">Add New</span>
+                      <span className="sm:hidden">Add</span>
+                    </div>
+                    <div className="absolute inset-0 bg-white/20 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                  </button>
+                </div>
+              </div>
+              
+              {/* Progress indicator */}
+              <div className="mt-4 h-1 bg-gray-200 rounded-full overflow-hidden">
+                <div 
+                  className="h-full bg-gradient-to-r from-blue-500 to-purple-600 rounded-full transition-all duration-500 ease-out"
+                  style={{ width: `${Math.min((selectedTransactions.length / Math.max(transactions.length, 1)) * 100, 100)}%` }}
+                ></div>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
