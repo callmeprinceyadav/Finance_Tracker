@@ -369,75 +369,46 @@ export const Transactions: React.FC = () => {
     <div className="space-y-6 pb-32 lg:pb-28">
       {/* Header Section */}
       <div className="bg-white rounded-xl border border-gray-200 shadow-md p-6">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
-          {/* Left: Title and Info */}
-          <div className="flex-1">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="p-2 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-lg shadow-sm">
-                <CreditCard className="h-5 w-5 text-white" />
-              </div>
-              <div>
-                <h1 className="text-xl sm:text-2xl font-semibold text-gray-900">
-                  Transaction Management
-                </h1>
-                <p className="text-gray-600 text-sm mt-1">
-                  Manage your financial transactions
-                </p>
-              </div>
+        <div className="flex flex-col items-center justify-center text-center">
+          {/* Title and Info */}
+          <div className="flex flex-col sm:flex-row items-center gap-4">
+            <div className="p-3 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-lg shadow-sm">
+              <CreditCard className="h-6 w-6 text-white" />
             </div>
-            
-            {/* Stats Row */}
-            <div className="flex flex-wrap items-center gap-4">
-              <div className="flex items-center gap-2 bg-emerald-50 px-3 py-1.5 rounded-lg border border-emerald-200">
-                <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
-                <span className="text-emerald-700 font-medium text-sm">Live Data</span>
-              </div>
-              <div className="flex items-center gap-1 text-gray-600">
-                <span className="text-lg font-semibold text-blue-600">{totalCount} </span>
-                <span className="text-sm"> transactions</span>
-              </div>
-            </div>
-          </div>
-          
-          {/* Right: Action Buttons */}
-          <div className="flex flex-col sm:flex-row items-start gap-3">
-            <div className="flex items-center gap-2">
-              <button
-                onClick={fetchTransactions}
-                disabled={loading}
-                className="p-2.5 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-lg transition-all shadow-sm hover:shadow-md group"
-                title="Refresh transactions"
-              >
-                <RefreshCw className={`h-4 w-4 text-gray-600 group-hover:text-blue-600 transition-all ${loading ? 'animate-spin' : ''}`} />
-              </button>
+            <div>
+              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
+                Transaction Management
+              </h1>
+              <p className="text-gray-600 text-sm mt-1">
+                Manage your financial transactions
+              </p>
             </div>
           </div>
         </div>
       </div>
 
       {/* Search & Filter Section */}
-      <div className="bg-white rounded-xl border border-gray-200 shadow-md p-6">
+      <div className="bg-white rounded-xl border border-gray-200 shadow-md p-4 sm:p-6">
         {/* Search Bar */}
         <div className="mb-6">
-          <div className="relative">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <Search className="h-4 w-4 text-gray-400" />
+          <div className="flex justify-center">
+            <div className="relative w-full mx-[5%]">
+              <input
+                type="text"
+                placeholder="Search transactions by description, merchant, or category..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full px-6 py-4 bg-gray-50 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:bg-white transition-all placeholder-gray-500 text-gray-900 text-base font-medium shadow-sm hover:shadow-md"
+              />
+              {searchTerm && (
+                <button
+                  onClick={() => setSearchTerm('')}
+                  className="absolute inset-y-0 right-0 pr-4 flex items-center"
+                >
+                  <XCircle className="h-5 w-5 text-gray-400 hover:text-red-500 transition-colors" />
+                </button>
+              )}
             </div>
-            <input
-              type="text"
-              placeholder="Search transactions by description, merchant, or category..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-10 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:bg-white transition-all placeholder-gray-500 text-gray-900 text-sm"
-            />
-            {searchTerm && (
-              <button
-                onClick={() => setSearchTerm('')}
-                className="absolute inset-y-0 right-0 pr-3 flex items-center"
-              >
-                <XCircle className="h-4 w-4 text-gray-400 hover:text-red-500 transition-colors" />
-              </button>
-            )}
           </div>
         </div>
 
@@ -648,13 +619,13 @@ export const Transactions: React.FC = () => {
             </div>
           )}
 
-          {/* Responsive Transactions Table */}
-          <div className="bg-white rounded-xl border border-gray-200 shadow-md p-3 sm:p-4 transition-shadow duration-200 mt-4 sm:mt-6 lg:mt-8">
-            <div className="overflow-x-auto rounded-lg">
-              <table className="min-w-[700px] md:min-w-[920px] w-full text-xs md:text-sm border-separate border-spacing-y-2 sm:border-spacing-y-3">
-                <thead>
-                  <tr className="bg-gray-50 text-gray-600">
-                    <th className="w-10 px-4 py-3 text-left">
+          {/* Enhanced Transactions Table */}
+          <div className="bg-white rounded-xl border border-gray-200 shadow-md overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[900px]">
+                <thead className="bg-gradient-to-r from-gray-50 to-gray-100 border-b-2 border-gray-200">
+                  <tr>
+                    <th className="w-12 px-6 py-4 text-left">
                       <input
                         type="checkbox"
                         checked={transactions.length > 0 && selectedTransactions.length === transactions.length}
@@ -663,17 +634,17 @@ export const Transactions: React.FC = () => {
                         aria-label="Select all transactions"
                       />
                     </th>
-                    <th className="px-4 py-3 text-left font-medium text-xs md:text-sm">Description</th>
-                    <th className="px-4 py-3 text-left font-medium text-xs md:text-sm">Category</th>
-                    <th className="px-4 py-3 text-left font-medium text-xs md:text-sm">Date</th>
-                    <th className="px-4 py-3 text-left font-medium text-xs md:text-sm hidden md:table-cell">Merchant</th>
-                    <th className="px-4 py-3 text-right font-medium text-xs md:text-sm">Amount</th>
-                    <th className="px-4 py-3 text-center font-medium text-xs md:text-sm hidden md:table-cell">Type</th>
-                    <th className="px-4 py-3 text-center font-medium text-xs md:text-sm">Actions</th>
+                    <th className="px-6 py-4 text-left font-semibold text-gray-800 text-sm uppercase tracking-wide">Transaction Details</th>
+                    <th className="px-6 py-4 text-left font-semibold text-gray-800 text-sm uppercase tracking-wide">Category</th>
+                    <th className="px-6 py-4 text-left font-semibold text-gray-800 text-sm uppercase tracking-wide">Date</th>
+                    <th className="px-6 py-4 text-left font-semibold text-gray-800 text-sm uppercase tracking-wide hidden lg:table-cell">Merchant</th>
+                    <th className="px-6 py-4 text-right font-semibold text-gray-800 text-sm uppercase tracking-wide">Amount</th>
+                    <th className="px-6 py-4 text-center font-semibold text-gray-800 text-sm uppercase tracking-wide hidden md:table-cell">Type</th>
+                    <th className="px-6 py-4 text-center font-semibold text-gray-800 text-sm uppercase tracking-wide">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
-                  {transactions.map((t) => (
+                  {transactions.map((t, index) => (
                     <TransactionRow
                       key={t._id}
                       transaction={t}
@@ -684,6 +655,7 @@ export const Transactions: React.FC = () => {
                       getCategoryColor={getCategoryColor}
                       onSelectForEdit={handleSelectForEdit}
                       onSelectForDelete={handleSelectForDelete}
+                      index={index}
                     />
                   ))}
                 </tbody>
@@ -726,46 +698,46 @@ export const Transactions: React.FC = () => {
         />
       )}
       
-      {/* Advanced External CRUD Control Panel */}
+      {/* Enhanced Control Panel */}
       {transactions.length > 0 && (
         <div className="fixed bottom-0 left-0 right-0 z-50">
-          {/* Backdrop blur effect */}
-          <div className="absolute inset-0 bg-white/95 backdrop-blur-sm border-t border-gray-200/80 shadow-2xl"></div>
+          {/* Backdrop with enhanced blur */}
+          <div className="absolute inset-0 bg-gradient-to-t from-white/98 via-white/95 to-white/90 backdrop-blur-md border-t border-gray-200/60 shadow-2xl"></div>
           
           {/* Main control panel */}
           <div className="relative">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-5">
-              <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 lg:gap-6">
+            <div className="max-w-7xl mx-auto px-6 lg:px-8 py-6">
+              <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6 lg:gap-8">
                 
                 {/* Selection Info */}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-3">
                     <div className={`flex items-center justify-center w-10 h-10 rounded-full transition-all duration-300 ${
                       selectedTransactions.length > 0
-                        ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg'
-                        : 'bg-gray-100 text-gray-400'
+                        ? 'bg-blue-600 text-white shadow-md'
+                        : 'bg-gray-200 text-gray-500'
                     }`}>
-                      <span className="text-sm font-bold">{selectedTransactions.length}</span>
+                      <span className="text-sm font-semibold">{selectedTransactions.length}</span>
                     </div>
                     <div>
-                      <p className="text-sm font-semibold text-gray-900 leading-tight">
+                      <p className="text-sm font-semibold text-gray-900">
                         {selectedTransactions.length === 0 
                           ? "No transactions selected" 
                           : selectedTransactions.length === 1
                           ? "1 transaction selected"
                           : `${selectedTransactions.length} transactions selected`}
                       </p>
-                      <p className="text-xs text-gray-500 mt-0.5">
+                      <p className="text-xs text-gray-600">
                         {selectedTransactions.length === 0
                           ? "Select transactions to perform actions"
-                          : "Use the buttons below to edit, delete, or create transactions"}
+                          : "Use the buttons to edit, delete, or create transactions"}
                       </p>
                     </div>
                   </div>
                 </div>
                 
                 {/* Action Buttons */}
-                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full lg:w-auto">
+                <div className="flex flex-wrap items-center gap-3 justify-center sm:justify-end">
                   
                   {/* Edit Button */}
                   <button
@@ -778,22 +750,28 @@ export const Transactions: React.FC = () => {
                       }
                     }}
                     disabled={selectedTransactions.length !== 1}
-                    className={`group relative px-6 py-3 rounded-xl font-semibold text-sm transition-all duration-300 transform hover:scale-105 ${
-                      selectedTransactions.length === 1
-                        ? 'bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white shadow-lg hover:shadow-xl'
-                        : 'bg-gray-100 text-gray-400 cursor-not-allowed shadow-inner'
-                    }`}
+                    className="px-4 py-2 rounded-lg font-medium text-sm transition-all duration-200 border flex items-center gap-2 shadow-sm hover:shadow-md"
+                    style={{
+                      backgroundColor: selectedTransactions.length === 1 ? '#16a34a' : '#f3f4f6',
+                      color: selectedTransactions.length === 1 ? '#ffffff' : '#9ca3af',
+                      borderColor: selectedTransactions.length === 1 ? '#16a34a' : '#d1d5db',
+                      cursor: selectedTransactions.length === 1 ? 'pointer' : 'not-allowed'
+                    }}
+                    onMouseEnter={(e) => {
+                      if (selectedTransactions.length === 1) {
+                        e.currentTarget.style.backgroundColor = '#15803d';
+                        e.currentTarget.style.borderColor = '#15803d';
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (selectedTransactions.length === 1) {
+                        e.currentTarget.style.backgroundColor = '#16a34a';
+                        e.currentTarget.style.borderColor = '#16a34a';
+                      }
+                    }}
                   >
-                    <div className="flex items-center justify-center gap-2.5">
-                      <Edit3 className={`h-4 w-4 transition-transform duration-300 ${
-                        selectedTransactions.length === 1 ? 'group-hover:rotate-12' : ''
-                      }`} />
-                      <span className="hidden sm:inline">Edit Selected</span>
-                      <span className="sm:hidden">Edit</span>
-                    </div>
-                    {selectedTransactions.length === 1 && (
-                      <div className="absolute inset-0 bg-white/20 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                    )}
+                    <Edit3 className="h-4 w-4" />
+                    <span className="hidden sm:inline">Edit</span>
                   </button>
                   
                   {/* Delete Button */}
@@ -808,47 +786,72 @@ export const Transactions: React.FC = () => {
                       }
                     }}
                     disabled={selectedTransactions.length === 0}
-                    className={`group relative px-6 py-3 rounded-xl font-semibold text-sm transition-all duration-300 transform hover:scale-105 ${
-                      selectedTransactions.length >= 1
-                        ? 'bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white shadow-lg hover:shadow-xl'
-                        : 'bg-gray-100 text-gray-400 cursor-not-allowed shadow-inner'
-                    }`}
+                    className="px-4 py-2 rounded-lg font-medium text-sm transition-all duration-200 border flex items-center gap-2 shadow-sm hover:shadow-md"
+                    style={{
+                      backgroundColor: selectedTransactions.length >= 1 ? '#dc2626' : '#f3f4f6',
+                      color: selectedTransactions.length >= 1 ? '#ffffff' : '#9ca3af',
+                      borderColor: selectedTransactions.length >= 1 ? '#dc2626' : '#d1d5db',
+                      cursor: selectedTransactions.length >= 1 ? 'pointer' : 'not-allowed'
+                    }}
+                    onMouseEnter={(e) => {
+                      if (selectedTransactions.length >= 1) {
+                        e.currentTarget.style.backgroundColor = '#b91c1c';
+                        e.currentTarget.style.borderColor = '#b91c1c';
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (selectedTransactions.length >= 1) {
+                        e.currentTarget.style.backgroundColor = '#dc2626';
+                        e.currentTarget.style.borderColor = '#dc2626';
+                      }
+                    }}
                   >
-                    <div className="flex items-center justify-center gap-2.5">
-                      <Trash2 className={`h-4 w-4 transition-transform duration-300 ${
-                        selectedTransactions.length >= 1 ? 'group-hover:rotate-12' : ''
-                      }`} />
-                      <span className="hidden sm:inline">
-                        Delete {selectedTransactions.length > 1 ? `(${selectedTransactions.length})` : 'Selected'}
-                      </span>
-                      <span className="sm:hidden">Delete</span>
-                    </div>
-                    {selectedTransactions.length >= 1 && (
-                      <div className="absolute inset-0 bg-white/20 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                    )}
+                    <Trash2 className="h-4 w-4" />
+                    <span className="hidden sm:inline">
+                      Delete {selectedTransactions.length > 1 ? `(${selectedTransactions.length})` : ''}
+                    </span>
                   </button>
                   
                   {/* Add New Button */}
                   <button
                     onClick={() => setShowNewTransactionForm(true)}
-                    className="group relative px-6 py-3 bg-gradient-to-r from-emerald-600 to-green-700 hover:from-emerald-700 hover:to-green-800 text-white font-semibold rounded-xl transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl"
+                    className="px-4 py-2 border rounded-lg font-medium text-sm transition-all duration-200 shadow-sm hover:shadow-md flex items-center gap-2"
+                    style={{
+                      backgroundColor: '#2563eb',
+                      color: '#ffffff',
+                      borderColor: '#2563eb'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = '#1d4ed8';
+                      e.currentTarget.style.borderColor = '#1d4ed8';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = '#2563eb';
+                      e.currentTarget.style.borderColor = '#2563eb';
+                    }}
                   >
-                    <div className="flex items-center justify-center gap-2.5">
-                      <Plus className="h-4 w-4 transition-transform duration-300 group-hover:rotate-180" />
-                      <span className="hidden sm:inline">Add New</span>
-                      <span className="sm:hidden">Add</span>
-                    </div>
-                    <div className="absolute inset-0 bg-white/20 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                    <Plus className="h-4 w-4" />
+                    <span className="hidden sm:inline">Add New</span>
                   </button>
                 </div>
               </div>
               
-              {/* Progress indicator */}
-              <div className="mt-4 h-1 bg-gray-200 rounded-full overflow-hidden">
-                <div 
-                  className="h-full bg-gradient-to-r from-blue-500 to-purple-600 rounded-full transition-all duration-500 ease-out"
-                  style={{ width: `${Math.min((selectedTransactions.length / Math.max(transactions.length, 1)) * 100, 100)}%` }}
-                ></div>
+              {/* Progress Indicator */}
+              <div className="mt-4">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-xs text-gray-500">
+                    Selection Progress
+                  </span>
+                  <span className="text-xs font-medium text-gray-600">
+                    {selectedTransactions.length}/{transactions.length}
+                  </span>
+                </div>
+                <div className="h-1 bg-gray-200 rounded-full overflow-hidden">
+                  <div 
+                    className="h-full bg-blue-600 rounded-full transition-all duration-500 ease-out"
+                    style={{ width: `${Math.min((selectedTransactions.length / Math.max(transactions.length, 1)) * 100, 100)}%` }}
+                  ></div>
+                </div>
               </div>
             </div>
           </div>
