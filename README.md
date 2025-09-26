@@ -2,6 +2,12 @@
 
 A smart personal finance management app that automatically parses your bank statements using AI and gives you insights into your spending habits. Built with modern web technologies for a seamless experience.
 
+#  Scrrenshot Of Ai Finance Tracker :-
+
+  ![alt text](screencapture-ft-frontend-inky-vercel-app-2025-09-26-08_18_17.png)
+  ![alt text](screencapture-ft-frontend-inky-vercel-app-2025-09-26-08_18_33.png)
+  ![alt text](screencapture-ft-frontend-inky-vercel-app-2025-09-26-08_18_43.png)
+
 ## ✨ What Makes This Special
 
 This isn't just another expense tracker. I wanted to solve the pain of manually categorizing dozens of transactions every month, so I built something that does the heavy lifting for you:
