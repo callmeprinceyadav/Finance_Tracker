@@ -25,81 +25,37 @@ export const FileUpload: React.FC<FileUploadProps> = ({
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
 
   const resetUploadState = () => {
-    setUploadState({
-      isUploading: false,
-      progress: 0,
-      error: null,
-      success: false
-    });
+    setUploadState({ isUploading: false, progress: 0, error: null, success: false });
     setUploadedFile(null);
   };
 
   const handleFileUpload = useCallback(async (file: File) => {
     setUploadedFile(file);
-    setUploadState({
-      isUploading: true,
-      progress: 0,
-      error: null,
-      success: false
-    });
+    setUploadState({ isUploading: true, progress: 0, error: null, success: false });
 
     try {
       const response = await financeApi.uploadBankStatement(
         file,
-        (progress) => {
-          setUploadState(prev => ({ ...prev, progress }));
-        }
+        (progress) => { setUploadState(prev => ({ ...prev, progress })); }
       );
 
       if (response.success && response.data) {
-        setUploadState({
-          isUploading: false,
-          progress: 100,
-          error: null,
-          success: true
-        });
-
-        if (onUploadSuccess) {
-          onUploadSuccess(response.data);
-        }
-
-        console.log('✅ Session-based upload successful:', {
-          totalParsed: response.data.totalParsed,
-          totalSaved: response.data.totalSaved,
-          previousDataPreserved: response.data.previousDataPreserved,
-          isNewSession: response.data.isNewSession,
-          sessionMessage: response.data.sessionMessage
-        });
-
-        // Auto-reset after 4 seconds for session-based uploads
-        setTimeout(() => {
-          resetUploadState();
-        }, 4000);
+        setUploadState({ isUploading: false, progress: 100, error: null, success: true });
+        if (onUploadSuccess) onUploadSuccess(response.data);
+        setTimeout(() => { resetUploadState(); }, 4000);
       } else {
         throw new Error(response.error || 'Upload failed');
       }
     } catch (error) {
       const errorMessage = handleApiError(error);
-      setUploadState({
-        isUploading: false,
-        progress: 0,
-        error: errorMessage,
-        success: false
-      });
-
-      if (onUploadError) {
-        onUploadError(errorMessage);
-      }
-
-      console.error('❌ Upload failed:', errorMessage);
+      setUploadState({ isUploading: false, progress: 0, error: errorMessage, success: false });
+      if (onUploadError) onUploadError(errorMessage);
     }
   }, [onUploadSuccess, onUploadError]);
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
     const file = acceptedFiles[0];
-    if (file) {
-      handleFileUpload(file);
-    }
+    if (file) handleFileUpload(file);
   }, [handleFileUpload]);
 
   const { getRootProps, getInputProps, isDragActive, isDragReject } = useDropzone({
@@ -112,56 +68,63 @@ export const FileUpload: React.FC<FileUploadProps> = ({
       'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx']
     },
     multiple: false,
-    maxSize: 10 * 1024 * 1024, // 10MB
+    maxSize: 10 * 1024 * 1024,
     disabled: uploadState.isUploading
   });
 
-  const getUploadAreaClasses = () => {
-    let baseClasses = 'relative border-2 border-dashed rounded-lg p-6 transition-all duration-200 cursor-pointer';
-    
-    if (uploadState.isUploading) {
-      baseClasses += ' border-primary-400 bg-primary-50';
-    } else if (uploadState.success) {
-      baseClasses += ' border-success-400 bg-success-50';
-    } else if (uploadState.error) {
-      baseClasses += ' border-danger-400 bg-danger-50';
-    } else if (isDragReject) {
-      baseClasses += ' border-danger-400 bg-danger-50';
-    } else if (isDragActive) {
-      baseClasses += ' border-primary-400 bg-primary-50';
-    } else {
-      baseClasses += ' border-gray-300 bg-gray-50 hover:border-primary-400 hover:bg-primary-50';
-    }
+  const getDropzoneStyle = (): React.CSSProperties => {
+    const base: React.CSSProperties = {
+      background: 'rgba(30, 41, 59, 0.5)',
+      backdropFilter: 'blur(12px)',
+      borderRadius: '16px',
+      padding: '2.5rem',
+      cursor: 'pointer',
+      transition: 'all 0.3s ease',
+      border: '2px dashed rgba(148, 163, 184, 0.15)',
+    };
 
-    return baseClasses;
+    if (uploadState.isUploading) {
+      return { ...base, borderColor: 'rgba(99, 102, 241, 0.5)', background: 'rgba(99, 102, 241, 0.05)' };
+    } else if (uploadState.success) {
+      return { ...base, borderColor: 'rgba(16, 185, 129, 0.5)', background: 'rgba(16, 185, 129, 0.05)' };
+    } else if (uploadState.error || isDragReject) {
+      return { ...base, borderColor: 'rgba(244, 63, 94, 0.5)', background: 'rgba(244, 63, 94, 0.05)' };
+    } else if (isDragActive) {
+      return { ...base, borderColor: 'rgba(99, 102, 241, 0.5)', background: 'rgba(99, 102, 241, 0.08)', transform: 'scale(1.02)' };
+    }
+    return base;
   };
 
   const renderUploadContent = () => {
     if (uploadState.isUploading) {
       return (
         <div className="text-center">
-          <Loader2 className="mx-auto h-12 w-12 text-primary-500 animate-spin mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 mb-2">
+          <div className="mx-auto mb-4 p-3 rounded-2xl gradient-indigo" style={{ width: 'fit-content' }}>
+            <Loader2 className="h-8 w-8 text-white animate-spin" />
+          </div>
+          <h3 className="text-lg font-semibold mb-2" style={{ color: '#e2e8f0' }}>
             Processing your bank statement...
           </h3>
-          <p className="text-sm text-gray-600 mb-4">
-            💾 Preserving existing data and analyzing new transactions with AI
+          <p className="text-sm mb-4" style={{ color: '#64748b' }}>
+            Analyzing transactions with AI
           </p>
-          
           {uploadedFile && (
-            <div className="flex items-center justify-center text-sm text-gray-500 mb-4">
+            <div className="flex items-center justify-center text-sm mb-4" style={{ color: '#64748b' }}>
               <FileText className="h-4 w-4 mr-2" />
               {uploadedFile.name}
             </div>
           )}
-          
-          <div className="w-full bg-gray-200 rounded-full h-2">
+          <div className="w-full rounded-full h-1.5" style={{ background: 'rgba(51, 65, 85, 0.5)' }}>
             <div 
-              className="bg-primary-500 h-2 rounded-full transition-all duration-300"
-              style={{ width: `${uploadState.progress}%` }}
+              className="h-1.5 rounded-full transition-all duration-300"
+              style={{ 
+                width: `${uploadState.progress}%`,
+                background: 'linear-gradient(90deg, #6366f1, #8b5cf6)',
+                boxShadow: '0 0 10px rgba(99, 102, 241, 0.3)',
+              }}
             />
           </div>
-          <p className="text-xs text-gray-500 mt-2">{uploadState.progress}% complete</p>
+          <p className="text-xs mt-2" style={{ color: '#64748b' }}>{uploadState.progress}% complete</p>
         </div>
       );
     }
@@ -169,12 +132,14 @@ export const FileUpload: React.FC<FileUploadProps> = ({
     if (uploadState.success) {
       return (
         <div className="text-center">
-          <CheckCircle className="mx-auto h-12 w-12 text-success-500 mb-4" />
-          <h3 className="text-lg font-medium text-success-900 mb-2">
+          <div className="mx-auto mb-4 p-3 rounded-2xl gradient-emerald" style={{ width: 'fit-content' }}>
+            <CheckCircle className="h-8 w-8 text-white" />
+          </div>
+          <h3 className="text-lg font-semibold mb-2" style={{ color: '#34d399' }}>
             New Session Started!
           </h3>
-          <p className="text-sm text-success-700">
-            🎆 Dashboard showing your new statement data. All previous data preserved in database.
+          <p className="text-sm" style={{ color: '#64748b' }}>
+            Dashboard showing your new data. Previous data preserved.
           </p>
         </div>
       );
@@ -183,69 +148,71 @@ export const FileUpload: React.FC<FileUploadProps> = ({
     if (uploadState.error) {
       return (
         <div className="text-center">
-          <AlertCircle className="mx-auto h-12 w-12 text-danger-500 mb-4" />
-          <h3 className="text-lg font-medium text-danger-900 mb-2">
-            Upload Failed
-          </h3>
-          <p className="text-sm text-danger-700 mb-4">
-            {uploadState.error}
-          </p>
-          <button
-            onClick={resetUploadState}
-            className="text-sm text-primary-600 hover:text-primary-800 font-medium"
-          >
+          <div className="mx-auto mb-4 p-3 rounded-2xl gradient-rose" style={{ width: 'fit-content' }}>
+            <AlertCircle className="h-8 w-8 text-white" />
+          </div>
+          <h3 className="text-lg font-semibold mb-2" style={{ color: '#fb7185' }}>Upload Failed</h3>
+          <p className="text-sm mb-4" style={{ color: '#64748b' }}>{uploadState.error}</p>
+          <button onClick={resetUploadState} className="text-sm text-primary-500 font-medium">
             Try Again
           </button>
         </div>
       );
     }
 
-    // Default upload state
     return (
       <div className="text-center">
-        <Upload className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-        <h3 className="text-lg font-medium text-gray-900 mb-2">
+        <div className="mx-auto mb-4 p-4 rounded-2xl animate-float" style={{ 
+          width: 'fit-content',
+          background: 'rgba(99, 102, 241, 0.1)',
+          border: '1px solid rgba(99, 102, 241, 0.2)',
+        }}>
+          <Upload className="h-8 w-8" style={{ color: '#818cf8' }} />
+        </div>
+        <h3 className="text-lg font-semibold mb-2" style={{ color: '#e2e8f0' }}>
           {isDragActive ? 'Drop your file here' : 'Upload Bank Statement'}
         </h3>
-        <p className="text-sm text-gray-600 mb-4">
+        <p className="text-sm mb-4" style={{ color: '#64748b' }}>
           {isDragReject 
             ? 'Invalid file type. Please select a PDF, CSV, or TXT file.'
             : 'Drop your file here, or click to select'
           }
         </p>
-        <div className="flex flex-wrap justify-center gap-2 text-xs text-gray-500">
-          <span className="px-2 py-1 bg-white rounded border">PDF</span>
-          <span className="px-2 py-1 bg-white rounded border">CSV</span>
-          <span className="px-2 py-1 bg-white rounded border">TXT</span>
+        <div className="flex flex-wrap justify-center gap-2 text-xs">
+          {['PDF', 'CSV', 'TXT'].map(fmt => (
+            <span key={fmt} className="px-3 py-1 rounded-full" style={{ 
+              background: 'rgba(51, 65, 85, 0.5)', 
+              color: '#94a3b8',
+              border: '1px solid rgba(148, 163, 184, 0.1)',
+            }}>
+              {fmt}
+            </span>
+          ))}
         </div>
-        <p className="text-xs text-gray-400 mt-4">Maximum file size: 10MB</p>
+        <p className="text-xs mt-4" style={{ color: '#475569' }}>Maximum file size: 10MB</p>
       </div>
     );
   };
 
   return (
     <div className={`relative ${className}`}>
-      {/* Close button for error or success states */}
       {(uploadState.error || uploadState.success) && (
         <button
           onClick={resetUploadState}
-          className="absolute top-2 right-2 z-10 p-1 text-gray-400 hover:text-gray-600 rounded-full hover:bg-white/50"
+          className="absolute top-2 right-2 z-10 p-1 rounded-full transition-all"
+          style={{ color: '#64748b' }}
         >
           <X className="h-4 w-4" />
         </button>
       )}
 
-      <div
-        {...getRootProps()}
-        className={getUploadAreaClasses()}
-      >
+      <div {...getRootProps()} style={getDropzoneStyle()}>
         <input {...getInputProps()} />
         {renderUploadContent()}
       </div>
 
-      {/* Help text */}
-      <div className="mt-4 text-sm text-gray-600">
-        <h4 className="font-medium mb-2">Supported formats:</h4>
+      <div className="mt-4 text-sm" style={{ color: '#64748b' }}>
+        <h4 className="font-medium mb-2" style={{ color: '#94a3b8' }}>Supported formats:</h4>
         <ul className="text-xs space-y-1">
           <li>• PDF bank statements from most major banks</li>
           <li>• CSV files with Date, Amount, and Description columns</li>

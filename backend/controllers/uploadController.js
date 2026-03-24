@@ -7,7 +7,8 @@ const aiService = require('../utils/aiService');
 
 const storage = multer.diskStorage({
   destination: (req, file, callback) => {
-    const uploadPath = path.join(__dirname, '../uploads');
+    // Use /tmp for Vercel/serverless environments as others are read-only
+    const uploadPath = process.env.VERCEL ? '/tmp' : path.join(__dirname, '../uploads');
     
     if (!fs.existsSync(uploadPath)) {
       fs.mkdirSync(uploadPath, { recursive: true });
@@ -177,37 +178,47 @@ const uploadStatement = async (req, res) => {
   }
 };
 
-// Get upload status/history (future enhancement)
 const getUploadHistory = async (req, res) => {
   try {
-    // This could track upload history if we add a uploads collection
-    const recentTransactions = await Transaction.find()
-      .sort({ createdAt: -1 })
-      .limit(50)
-      .select('description amount date parsedBy createdAt');
-
-    const summary = await Transaction.aggregate([
+    // Aggregate transactions by sessionId to show history of uploads
+    const sessionSummary = await Transaction.aggregate([
+      {
+        $match: {
+          sessionId: { $exists: true, $ne: null }
+        }
+      },
       {
         $group: {
-          _id: '$parsedBy',
-          count: { $sum: 1 },
-          latestUpload: { $max: '$createdAt' }
+          _id: '$sessionId',
+          transactionCount: { $sum: 1 },
+          totalIncome: {
+            $sum: { $cond: [{ $gt: ['$amount', 0] }, '$amount', 0] }
+          },
+          totalExpenses: {
+            $sum: { $cond: [{ $lt: ['$amount', 0] }, { $abs: '$amount' }, 0] }
+          },
+          uploadDate: { $min: '$createdAt' }, // The date the session was created
+          latestTransactionDate: { $max: '$date' },
+          earliestTransactionDate: { $min: '$date' }
         }
+      },
+      {
+        $sort: { uploadDate: -1 } // Most recent uploads first
       }
     ]);
 
     res.json({
       success: true,
       data: {
-        recentTransactions,
-        uploadSummary: summary
+        uploadHistory: sessionSummary
       }
     });
   } catch (error) {
     console.error('Get upload history error:', error);
     res.status(500).json({
       success: false,
-      error: 'Failed to fetch upload history'
+      error: 'Failed to fetch upload history',
+      message: error.message
     });
   }
 };

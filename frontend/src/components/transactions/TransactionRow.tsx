@@ -27,23 +27,23 @@ export const TransactionRow: React.FC<TransactionRowProps> = ({
   onSelectForDelete,
   index = 0
 }) => {
-  const isEvenRow = index % 2 === 0;
-  
   return (
-    <tr className={`${
-      isSelected 
-        ? 'bg-blue-50 border-blue-200' 
-        : isEvenRow 
-          ? 'bg-white' 
-          : 'bg-gray-50'
-    } hover:bg-blue-50 transition-all duration-200 border-b border-gray-100`}>
+    <tr 
+      className="transition-all duration-200 table-row-dark"
+      style={{ 
+        background: isSelected 
+          ? 'rgba(99, 102, 241, 0.08)' 
+          : 'transparent',
+        borderBottom: '1px solid rgba(148, 163, 184, 0.06)',
+      }}
+    >
       {/* Selection Checkbox */}
       <td className="px-6 py-4 align-middle">
         <input
           type="checkbox"
           checked={isSelected}
           onChange={() => onToggle(t._id)}
-          className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded transition-colors"
+          className="h-4 w-4 rounded transition-colors"
           aria-label={`Select ${t.description}`}
         />
       </td>
@@ -51,31 +51,36 @@ export const TransactionRow: React.FC<TransactionRowProps> = ({
       {/* Transaction Details */}
       <td className="px-6 py-4 align-middle">
         <div className="flex items-center gap-4">
-          {/* Transaction Type Icon */}
           <div 
-            className="flex w-10 h-10 rounded-lg items-center justify-center flex-shrink-0 shadow-sm"
+            className="flex w-10 h-10 rounded-lg items-center justify-center flex-shrink-0"
             style={{
               background: t.amount >= 0 
-                ? 'linear-gradient(to right, #10b981, #22c55e)'
-                : 'linear-gradient(to right, #ef4444, #ec4899)',
-              color: '#ffffff'
+                ? 'linear-gradient(135deg, #059669, #10b981)'
+                : 'linear-gradient(135deg, #e11d48, #f43f5e)',
+              color: '#ffffff',
+              boxShadow: t.amount >= 0 
+                ? '0 4px 12px rgba(16, 185, 129, 0.3)'
+                : '0 4px 12px rgba(244, 63, 94, 0.3)',
             }}
           >
             {t.amount >= 0 ? <TrendingUp className="w-5 h-5" /> : <TrendingDown className="w-5 h-5" />}
           </div>
           
-          {/* Description and Status */}
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2 mb-1">
-              <h3 className="font-semibold text-gray-900 text-sm truncate">{t.description}</h3>
+              <h3 className="font-semibold text-sm truncate" style={{ color: '#e2e8f0' }}>{t.description}</h3>
               {!t.isVerified && (
-                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-700 border border-amber-200">
+                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium" style={{
+                  background: 'rgba(245, 158, 11, 0.15)',
+                  color: '#fbbf24',
+                  border: '1px solid rgba(245, 158, 11, 0.25)',
+                }}>
                   <AlertCircle className="w-3 h-3 mr-1" />
-                  AI Generated
+                  AI
                 </span>
               )}
             </div>
-            <p className="text-xs text-gray-500 flex items-center gap-1">
+            <p className="text-xs flex items-center gap-1" style={{ color: '#64748b' }}>
               <Calendar className="w-3 h-3" />
               {format(new Date(t.date), 'EEE, MMM dd, yyyy')}
             </p>
@@ -85,7 +90,11 @@ export const TransactionRow: React.FC<TransactionRowProps> = ({
       
       {/* Category */}
       <td className="px-6 py-4 align-middle">
-        <span className={`inline-flex items-center px-3 py-1.5 rounded-lg text-xs font-semibold border ${getCategoryColor(t.category)}`}>
+        <span className="inline-flex items-center px-3 py-1.5 rounded-lg text-xs font-semibold" style={{
+          background: 'rgba(51, 65, 85, 0.5)',
+          color: '#94a3b8',
+          border: '1px solid rgba(148, 163, 184, 0.1)',
+        }}>
           <Tag className="w-3 h-3 mr-1.5" />
           {t.category}
         </span>
@@ -93,10 +102,10 @@ export const TransactionRow: React.FC<TransactionRowProps> = ({
       
       {/* Date */}
       <td className="px-6 py-4 align-middle">
-        <div className="text-sm font-medium text-gray-900">
+        <div className="text-sm font-medium" style={{ color: '#e2e8f0' }}>
           {format(new Date(t.date), 'MMM dd')}
         </div>
-        <div className="text-xs text-gray-500">
+        <div className="text-xs" style={{ color: '#64748b' }}>
           {format(new Date(t.date), 'yyyy')}
         </div>
       </td>
@@ -105,33 +114,31 @@ export const TransactionRow: React.FC<TransactionRowProps> = ({
       <td className="px-6 py-4 align-middle hidden lg:table-cell">
         {t.merchant ? (
           <div className="flex items-center gap-2">
-            <Building2 className="w-4 h-4 text-gray-400" />
-            <span className="text-sm text-gray-700 font-medium truncate max-w-[120px]">{t.merchant}</span>
+            <Building2 className="w-4 h-4" style={{ color: '#64748b' }} />
+            <span className="text-sm font-medium truncate" style={{ color: '#94a3b8', maxWidth: '120px' }}>{t.merchant}</span>
           </div>
         ) : (
-          <span className="text-gray-400 text-sm italic">No merchant</span>
+          <span className="text-sm italic" style={{ color: '#475569' }}>No merchant</span>
         )}
       </td>
       
       {/* Amount */}
       <td className="px-6 py-4 align-middle text-right">
-        <div className={`text-lg font-bold tabular-nums ${
-          t.amount >= 0 ? 'text-emerald-600' : 'text-red-600'
-        }`}>
+        <div className="text-lg font-bold" style={{ 
+          color: t.amount >= 0 ? '#34d399' : '#fb7185',
+          fontVariantNumeric: 'tabular-nums',
+        }}>
           {formatCurrency(t.amount)}
-        </div>
-        <div className="text-xs text-gray-500">
-          {t.amount >= 0 ? '+' : ''}{formatCurrency(Math.abs(t.amount))}
         </div>
       </td>
       
       {/* Transaction Type */}
       <td className="px-6 py-4 align-middle text-center hidden md:table-cell">
-        <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold border ${
-          t.amount >= 0 
-            ? 'bg-emerald-50 text-emerald-700 border-emerald-200' 
-            : 'bg-red-50 text-red-700 border-red-200'
-        }`}>
+        <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold" style={{
+          background: t.amount >= 0 ? 'rgba(16, 185, 129, 0.1)' : 'rgba(244, 63, 94, 0.1)',
+          color: t.amount >= 0 ? '#34d399' : '#fb7185',
+          border: `1px solid ${t.amount >= 0 ? 'rgba(16, 185, 129, 0.2)' : 'rgba(244, 63, 94, 0.2)'}`,
+        }}>
           {t.amount >= 0 ? '💰 Income' : '💸 Expense'}
         </span>
       </td>
@@ -141,17 +148,19 @@ export const TransactionRow: React.FC<TransactionRowProps> = ({
         <div className="flex items-center justify-center gap-2">
           <button
             onClick={() => onSelectForEdit(t._id)}
-            className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-100 rounded-lg transition-all duration-200 group"
+            className="p-2 rounded-lg transition-all duration-200"
             title="Select for editing"
+            style={{ color: '#64748b' }}
           >
-            <Edit3 className="w-4 h-4 group-hover:scale-110 transition-transform" />
+            <Edit3 className="w-4 h-4" />
           </button>
           <button
             onClick={() => onSelectForDelete(t._id)}
-            className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-100 rounded-lg transition-all duration-200 group"
+            className="p-2 rounded-lg transition-all duration-200"
             title="Select for deletion"
+            style={{ color: '#64748b' }}
           >
-            <Trash2 className="w-4 h-4 group-hover:scale-110 transition-transform" />
+            <Trash2 className="w-4 h-4" />
           </button>
         </div>
       </td>

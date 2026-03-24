@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { financeApi, handleApiError } from '../services/api';
 import { DashboardData } from '../types';
 
@@ -20,7 +20,7 @@ export const useDashboard = (initialMonth?: number, initialYear?: number) => {
   const [selectedMonth, setSelectedMonth] = useState(initialMonth || new Date().getMonth() + 1);
   const [selectedYear, setSelectedYear] = useState(initialYear || new Date().getFullYear());
 
-  const fetchDashboardData = async (month?: number, year?: number) => {
+  const fetchDashboardData = useCallback(async (month?: number, year?: number) => {
     setState(prev => ({ ...prev, isLoading: true, error: null }));
 
     try {
@@ -47,24 +47,24 @@ export const useDashboard = (initialMonth?: number, initialYear?: number) => {
         error: handleApiError(error)
       }));
     }
-  };
+  }, []);
 
   
-  const refreshData = () => {
+  const refreshData = useCallback(() => {
     fetchDashboardData(selectedMonth, selectedYear);
-  };
+  }, [fetchDashboardData, selectedMonth, selectedYear]);
 
  
-  const changeTimeRange = (month: number, year: number) => {
+  const changeTimeRange = useCallback((month: number, year: number) => {
     setSelectedMonth(month);
     setSelectedYear(year);
     fetchDashboardData(month, year);
-  };
+  }, [fetchDashboardData]);
 
   // Initial load
   useEffect(() => {
     fetchDashboardData(selectedMonth, selectedYear);
-    
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Only run on mount, changeTimeRange handles updates
 
   // Computed values

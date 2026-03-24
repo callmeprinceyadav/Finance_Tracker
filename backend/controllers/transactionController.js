@@ -1,7 +1,16 @@
 const Transaction = require('../models/Transaction');
+const TransactionService = require('../services/transactionService');
 
-// Helper function to get the most recent session ID
-const getCurrentSessionId = async () => {
+// Helper function to determine the session ID to use for filtering
+const getActiveSessionId = async (requestedSessionId) => {
+  if (requestedSessionId === 'all') {
+    return null; // Don't filter by session
+  }
+  
+  if (requestedSessionId) {
+    return requestedSessionId;
+  }
+
   try {
     const mostRecentTransaction = await Transaction.findOne(
       { sessionId: { $exists: true, $ne: null } },
@@ -15,7 +24,7 @@ const getCurrentSessionId = async () => {
   }
 };
 
-// Get all transactions with optional filtering (session-based)
+// Get all transactions with optional filtering
 const getTransactions = async (req, res) => {
   try {
     const {
@@ -27,18 +36,15 @@ const getTransactions = async (req, res) => {
       transactionType,
       sortBy = 'date',
       sortOrder = 'desc',
-      search
+      search,
+      sessionId
     } = req.query;
 
-    // Get current session ID to filter transactions
-    const currentSessionId = await getCurrentSessionId();
-    
+    const activeSessionId = await getActiveSessionId(sessionId);
     const filter = {};
     
-    // Filter by current session if exists
-    if (currentSessionId) {
-      filter.sessionId = currentSessionId;
-      console.log(`🔍 Filtering transactions by session: ${currentSessionId}`);
+    if (activeSessionId) {
+      filter.sessionId = activeSessionId;
     }
     
     if (category && category !== 'All') {
@@ -49,7 +55,6 @@ const getTransactions = async (req, res) => {
       filter.transactionType = transactionType;
     }
     
-    // Search functionality
     if (search) {
       filter.$or = [
         { description: { $regex: search, $options: 'i' } },
@@ -57,7 +62,6 @@ const getTransactions = async (req, res) => {
         { category: { $regex: search, $options: 'i' } }
       ];
     }
-
     
     if (startDate || endDate) {
       filter.date = {};
@@ -69,18 +73,15 @@ const getTransactions = async (req, res) => {
       }
     }
 
-    // Pagination
     const skip = (parseInt(page) - 1) * parseInt(limit);
     const sortDirection = sortOrder === 'desc' ? -1 : 1;
     const sortOptions = { [sortBy]: sortDirection };
 
-    
     const transactions = await Transaction.find(filter)
       .sort(sortOptions)
       .skip(skip)
       .limit(parseInt(limit));
 
-    
     const totalCount = await Transaction.countDocuments(filter);
     const totalPages = Math.ceil(totalCount / parseInt(limit));
 
@@ -97,7 +98,6 @@ const getTransactions = async (req, res) => {
         }
       }
     });
-
   } catch (error) {
     console.error('Get transactions error:', error);
     res.status(500).json({
@@ -108,51 +108,22 @@ const getTransactions = async (req, res) => {
   }
 };
 
-
 const getDashboardData = async (req, res) => {
   try {
-    const { month, year } = req.query;
+    const { month, year, sessionId } = req.query;
     const currentDate = new Date();
     let targetMonth = month ? parseInt(month) : currentDate.getMonth() + 1;
     let targetYear = year ? parseInt(year) : currentDate.getFullYear();
 
-    // Get current session ID for filtering
-    const currentSessionId = await getCurrentSessionId();
-    console.log(`📈 Dashboard data filtered by session: ${currentSessionId || 'No session found'}`);
-    
-    // Base filter for current session
-    const sessionFilter = currentSessionId ? { sessionId: currentSessionId } : {};
+    const activeSessionId = await getActiveSessionId(sessionId);
+    const sessionFilter = activeSessionId ? { sessionId: activeSessionId } : {};
 
-    // Calculate monthly summary with session filter
-    const startOfMonth = new Date(targetYear, targetMonth - 1, 1);
-    const endOfMonth = new Date(targetYear, targetMonth, 0);
+    let startOfMonth = new Date(targetYear, targetMonth - 1, 1);
+    let endOfMonth = new Date(targetYear, targetMonth, 0);
     
-    let monthlySummary = await Transaction.aggregate([
-      {
-        $match: {
-          ...sessionFilter,
-          date: { $gte: startOfMonth, $lte: endOfMonth }
-        }
-      },
-      {
-        $group: {
-          _id: null,
-          totalIncome: {
-            $sum: {
-              $cond: [{ $gt: ['$amount', 0] }, '$amount', 0]
-            }
-          },
-          totalExpenses: {
-            $sum: {
-              $cond: [{ $lt: ['$amount', 0] }, { $abs: '$amount' }, 0]
-            }
-          },
-          transactionCount: { $sum: 1 }
-        }
-      }
-    ]);
+    let monthlySummary = await TransactionService.getMonthlySummary(sessionFilter, startOfMonth, endOfMonth);
     
-    // If no data for current month in current session, check if there are any transactions in session
+    // If no data for current month, auto-adjust to the most recent month with data
     if (!monthlySummary || monthlySummary.length === 0 || monthlySummary[0].transactionCount === 0) {
       const mostRecentTransaction = await Transaction.findOne(sessionFilter).sort({ date: -1 });
       if (mostRecentTransaction) {
@@ -160,112 +131,25 @@ const getDashboardData = async (req, res) => {
         targetMonth = recentDate.getMonth() + 1;
         targetYear = recentDate.getFullYear();
         
-        // Recalculate for the most recent month with data
-        const newStartOfMonth = new Date(targetYear, targetMonth - 1, 1);
-        const newEndOfMonth = new Date(targetYear, targetMonth, 0);
+        startOfMonth = new Date(targetYear, targetMonth - 1, 1);
+        endOfMonth = new Date(targetYear, targetMonth, 0);
         
-        monthlySummary = await Transaction.aggregate([
-          {
-            $match: {
-              ...sessionFilter,
-              date: { $gte: newStartOfMonth, $lte: newEndOfMonth }
-            }
-          },
-          {
-            $group: {
-              _id: null,
-              totalIncome: {
-                $sum: {
-                  $cond: [{ $gt: ['$amount', 0] }, '$amount', 0]
-                }
-              },
-              totalExpenses: {
-                $sum: {
-                  $cond: [{ $lt: ['$amount', 0] }, { $abs: '$amount' }, 0]
-                }
-              },
-              transactionCount: { $sum: 1 }
-            }
-          }
-        ]);
+        monthlySummary = await TransactionService.getMonthlySummary(sessionFilter, startOfMonth, endOfMonth);
       }
     }
     
-    // Use the same date range for category breakdown
-    const categoryBreakdown = await Transaction.aggregate([
-      {
-        $match: {
-          ...sessionFilter,
-          date: { $gte: startOfMonth, $lte: endOfMonth },
-          amount: { $lt: 0 } // Only expenses
-        }
-      },
-      {
-        $group: {
-          _id: '$category',
-          totalSpent: { $sum: { $abs: '$amount' } },
-          transactionCount: { $sum: 1 },
-          avgTransaction: { $avg: { $abs: '$amount' } }
-        }
-      },
-      { $sort: { totalSpent: -1 } },
-      { $limit: 10 }
-    ]);
-
+    const categoryBreakdown = await TransactionService.getCategoryBreakdown(sessionFilter, startOfMonth, endOfMonth);
     
     const recentTransactions = await Transaction.find(sessionFilter)
       .sort({ date: -1, createdAt: -1 })
       .limit(20);
 
-    
     const totalTransactions = await Transaction.countDocuments(sessionFilter);
-    const avgTransactionAmount = await Transaction.aggregate([
-      {
-        $match: sessionFilter
-      },
-      {
-        $group: {
-          _id: null,
-          avgAmount: { $avg: { $abs: '$amount' } }
-        }
-      }
-    ]);
-
+    const avgAmount = await TransactionService.getAverageTransactionAmount(sessionFilter);
     
-    const monthlyTrend = await Transaction.aggregate([
-      {
-        $match: {
-          ...sessionFilter,
-          date: {
-            $gte: new Date(targetYear, targetMonth - 7, 1),
-            $lte: endOfMonth
-          }
-        }
-      },
-      {
-        $group: {
-          _id: {
-            year: { $year: '$date' },
-            month: { $month: '$date' }
-          },
-          income: {
-            $sum: {
-              $cond: [{ $gt: ['$amount', 0] }, '$amount', 0]
-            }
-          },
-          expenses: {
-            $sum: {
-              $cond: [{ $lt: ['$amount', 0] }, { $abs: '$amount' }, 0]
-            }
-          },
-          netAmount: { $sum: '$amount' }
-        }
-      },
-      { $sort: { '_id.year': 1, '_id.month': 1 } },
-      { $limit: 6 }
-    ]);
+    const startPeriod = new Date(targetYear, targetMonth - 7, 1);
+    const monthlyTrend = await TransactionService.getMonthlyTrend(sessionFilter, startPeriod, endOfMonth);
 
-    
     const summary = monthlySummary[0] || {
       totalIncome: 0,
       totalExpenses: 0,
@@ -282,7 +166,7 @@ const getDashboardData = async (req, res) => {
           totalExpenses: summary.totalExpenses,
           netBalance: netBalance,
           transactionCount: summary.transactionCount,
-          avgTransactionAmount: avgTransactionAmount[0]?.avgAmount || 0
+          avgTransactionAmount: avgAmount
         },
         categoryBreakdown,
         recentTransactions,
@@ -291,7 +175,7 @@ const getDashboardData = async (req, res) => {
           month: targetMonth,
           year: targetYear,
           totalTransactions,
-          currentSessionId: currentSessionId,
+          currentSessionId: activeSessionId,
           lastUpdated: new Date().toISOString()
         }
       }
@@ -306,7 +190,6 @@ const getDashboardData = async (req, res) => {
     });
   }
 };
-
 
 const getTransactionById = async (req, res) => {
   try {
@@ -325,7 +208,6 @@ const getTransactionById = async (req, res) => {
       data: transaction
     });
   } catch (error) {
-    console.error('Get transaction by ID error:', error);
     res.status(500).json({
       success: false,
       error: 'Failed to fetch transaction',
@@ -334,13 +216,11 @@ const getTransactionById = async (req, res) => {
   }
 };
 
-// Update transaction (user can correct AI-parsed data)
 const updateTransaction = async (req, res) => {
   try {
     const { id } = req.params;
     const updateData = req.body;
 
-    // Validate required fields
     if (updateData.amount !== undefined && updateData.amount === 0) {
       return res.status(400).json({
         success: false,
@@ -348,7 +228,6 @@ const updateTransaction = async (req, res) => {
       });
     }
 
-    // Mark as verified if user is making changes
     updateData.isVerified = true;
 
     const updatedTransaction = await Transaction.findByIdAndUpdate(
@@ -369,9 +248,7 @@ const updateTransaction = async (req, res) => {
       message: 'Transaction updated successfully',
       data: updatedTransaction
     });
-
   } catch (error) {
-    console.error('Update transaction error:', error);
     res.status(500).json({
       success: false,
       error: 'Failed to update transaction',
@@ -380,11 +257,9 @@ const updateTransaction = async (req, res) => {
   }
 };
 
-// Delete transaction
 const deleteTransaction = async (req, res) => {
   try {
     const { id } = req.params;
-    
     const deletedTransaction = await Transaction.findByIdAndDelete(id);
 
     if (!deletedTransaction) {
@@ -399,9 +274,7 @@ const deleteTransaction = async (req, res) => {
       message: 'Transaction deleted successfully',
       data: deletedTransaction
     });
-
   } catch (error) {
-    console.error('Delete transaction error:', error);
     res.status(500).json({
       success: false,
       error: 'Failed to delete transaction',
@@ -410,17 +283,15 @@ const deleteTransaction = async (req, res) => {
   }
 };
 
-// Create transaction manually
 const createTransaction = async (req, res) => {
   try {
-    // Get current session ID to assign to manually created transaction
-    const currentSessionId = await getCurrentSessionId();
+    const activeSessionId = await getActiveSessionId();
     
     const transactionData = {
       ...req.body,
       parsedBy: 'manual',
       isVerified: true,
-      sessionId: currentSessionId // Assign to current session so it appears in UI
+      sessionId: activeSessionId
     };
 
     const newTransaction = new Transaction(transactionData);
@@ -431,9 +302,7 @@ const createTransaction = async (req, res) => {
       message: 'Transaction created successfully',
       data: savedTransaction
     });
-
   } catch (error) {
-    console.error('Create transaction error:', error);
     res.status(500).json({
       success: false,
       error: 'Failed to create transaction',
@@ -442,7 +311,6 @@ const createTransaction = async (req, res) => {
   }
 };
 
-// Bulk update transactions (mark as verified, change categories, etc.)
 const bulkUpdateTransactions = async (req, res) => {
   try {
     const { transactionIds, updateData } = req.body;
@@ -468,9 +336,7 @@ const bulkUpdateTransactions = async (req, res) => {
         modifiedCount: result.modifiedCount
       }
     });
-
   } catch (error) {
-    console.error('Bulk update error:', error);
     res.status(500).json({
       success: false,
       error: 'Failed to update transactions',
@@ -479,17 +345,11 @@ const bulkUpdateTransactions = async (req, res) => {
   }
 };
 
-// Get spending analytics
 const getSpendingAnalytics = async (req, res) => {
   try {
-    const { timeframe = 'month' } = req.query;
-    
-    // Get current session ID for filtering
-    const currentSessionId = await getCurrentSessionId();
-    console.log(`📊 Analytics filtered by session: ${currentSessionId || 'No session found'}`);
-    
-    // Base filter for current session
-    const sessionFilter = currentSessionId ? { sessionId: currentSessionId } : {};
+    const { timeframe = 'month', sessionId } = req.query;
+    const activeSessionId = await getActiveSessionId(sessionId);
+    const sessionFilter = activeSessionId ? { sessionId: activeSessionId } : {};
     
     let dateRange = {};
     const currentDate = new Date();
@@ -509,7 +369,6 @@ const getSpendingAnalytics = async (req, res) => {
         break;
     }
 
-    // Top spending categories
     const topCategories = await Transaction.aggregate([
       {
         $match: {
@@ -529,7 +388,6 @@ const getSpendingAnalytics = async (req, res) => {
       { $sort: { totalSpent: -1 } }
     ]);
 
-    // Top merchants
     const topMerchants = await Transaction.aggregate([
       {
         $match: {
@@ -560,7 +418,6 @@ const getSpendingAnalytics = async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Analytics error:', error);
     res.status(500).json({
       success: false,
       error: 'Failed to fetch analytics data',
